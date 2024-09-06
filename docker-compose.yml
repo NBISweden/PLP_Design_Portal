@@ -1,0 +1,37 @@
+services:
+  frontend:
+    build:
+      context: system/frontend
+      dockerfile: ../../containers/frontend.Dockerfile
+      target: dev
+    stop_signal: SIGINT
+    profiles:
+      - dev
+    ports:
+      - 127.0.0.1:${FRONTEND_PORT:-5173}:${FRONTEND_PORT:-5173}
+    volumes:
+      - ./system/frontend/:${FRONTEND_SRC_DIR:-/opt/builder}
+
+  backend:
+    build:
+      context: system
+      dockerfile: ../containers/backend.Dockerfile
+      target: dev
+    stop_signal: SIGINT
+    profiles:
+      - dev
+    ports:
+      - 127.0.0.1:${BACKEND_PORT:-5000}:${BACKEND_PORT:-5000}
+    volumes:
+      - ./system/backend/:${BACKEND_SRC_DIR:-/opt/app}
+    
+  app:
+    build:
+      context: system
+      dockerfile: ../containers/backend.Dockerfile
+      target: prod
+    stop_signal: SIGINT
+    profiles:
+      - prod
+    ports:
+      - 127.0.0.1:${BACKEND_PORT:-5000}:${BACKEND_PORT:-5000}
