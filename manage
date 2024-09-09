@@ -7,10 +7,6 @@ MANAGE_SCRIPT="scripts/manage.sh"
 TC="\e[0;31m"
 SC="\e[0;32m"
 NC="\e[0m"
-echo -e "${TC}Notice${NC}: This is a wrapper script for ${SC}'${MANAGE_SCRIPT}'${NC}. Use \
-${SC}'source ${MANAGE_SCRIPT}'${NC} in order to get a real 'manage' command \
-with auto completions.
-"
 
 source "${MANAGE_SCRIPT}"
 manage "$@"

@@ -14,11 +14,8 @@ _setup_actions() {
         for action_index in "${!ACTIONS[@]}"
         do
             echo -e "  - ${AC}${ACTIONS[$action_index]}${NC}: ${HELP_SECTIONS[$action_index]}"
-            CURRENT_EXAMPLES=${EXAMPLES[$action_index]}
-            for example_msg in "${CURRENT_EXAMPLES[@]}"
-            do
-                echo -e "    ${example_msg}"
-            done
+            EXAMPLE=${EXAMPLES[$action_index]}
+            if [[ $EXAMPLE ]]; then echo -e "    ex. ${EXAMPLE}"; fi
         done
     }
 
@@ -26,8 +23,7 @@ _setup_actions() {
         # _add_action <action_id> <help_section> <example_command>
         ACTIONS+=("$1")
         HELP_SECTIONS+=("$2")
-        SINGLE_EXAMPLE=("${@:3:99}")
-        EXAMPLES+=("$SINGLE_EXAMPLE")
+        EXAMPLES+=("$3")
     }
 
     _run() {
