@@ -1,19 +1,25 @@
+
+import React from "react";
 import './DropDown.css'
 
 interface Props {
-    options: (string | number)[],
-    labelText: string
+    options: {label: string, value: string | number}[];
+    label: string;
+    required?: boolean;
+    name?: string;
 }
 
-export function DropDown( {options, labelText}: Props){
+export function DropDown( {options, label, required, name}: Props){
+    const id = React.useId();
     return (
         <>
-            <label htmlFor="dropdown">{labelText}</label>
-            <select id="dropdown" name="dropdown">
+            <label id={id}>{label}</label>
+            <select id={id} name={name} required={required}>
                 {options.map((option) => (
-                    <option value={option}>{option}</option>
-                    ))
-                }
+                    <option
+                        key={option.value}
+                        value={option.value}>{option.label}</option>
+                ))}
             </select>
         </>
     )

@@ -1,15 +1,24 @@
+import React from "react";
 import './Checkbox.css'
 
 interface Props {
-    labelText: string
+    label: string;
+    required?: boolean;
+    name?: string;
 }
 
-export function CheckBox({labelText}: Props) {
+export function CheckBox({label, required, name}: Props) {
+    const id = React.useId()
     return (
         <>
-            <label htmlFor="checkbox">
-                {labelText}
-                <input type="checkbox" id="checkbox" name="checkbox" />
+            <label id={id}>
+                {label}
+                <input
+                    type="checkbox"
+                    id={id}
+                    name={name}
+                    required={required}
+                />
             </label>
         </>
     )

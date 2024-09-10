@@ -1,9 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { InputField } from "./components/InputField/InputField";
+import { CheckBox } from "./components/Checkbox/CheckBox";
+import { DropDown } from "./components/Dropdown/DropDown";
 import './index.css'
-import {InputField} from "./components/InputField/InputField";
-import {CheckBox} from "./components/Checkbox/CheckBox";
-import {DropDown} from "./components/Dropdown/DropDown";
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -25,12 +25,12 @@ createRoot(document.getElementById('root')!).render(
               <form>
                   <fieldset>
                       <legend>Input</legend>
-                        <InputField type={"text"} labelText={'Text:'}/>
-                        <CheckBox labelText={'FASTA input: Source sequence is absent in reference genome:'}/>
+                        <InputField type="text" label="Text:"/>
+                        <CheckBox label="FASTA input: Source sequence is absent in reference genome:"/>
                   </fieldset>
                   <fieldset>
                       <legend>Distance</legend>
-                        <DropDown options={[0,1]} labelText={'Choose an option:'}/>
+                        <DropDown options={[0,1].map(o => ({value: o, label: `${o}`}))} label="Choose an option:"/>
                   </fieldset>
                   <button type="submit">Submit</button>
               </form>
@@ -39,6 +39,5 @@ createRoot(document.getElementById('root')!).render(
       <footer>
           <p>Provided by NBIS system development</p>
       </footer>
-
   </StrictMode>,
 )
