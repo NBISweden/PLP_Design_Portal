@@ -13,7 +13,7 @@ export function DropDown( {options, label, required, name}: Props){
     const id = React.useId();
     return (
         <>
-            <label id={id}>{label}</label>
+            <label htmlFor={id}>{label}</label>
             <select id={id} name={name} required={required}>
                 {options.map((option) => (
                     <option
