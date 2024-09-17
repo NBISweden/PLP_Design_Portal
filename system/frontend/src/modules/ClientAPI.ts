@@ -4,45 +4,35 @@ export type Description = {
 }
 
 export type Option<T> = {
-    id: T;
+    value: T;
     label: string;
 }
 
-export type Field = (
+export type FieldRef = (
     {
         id: string;
-        default: any;
     } &
-    Description &
     (
         {
-            type: "input";
-            valueType: "text" | "number" | "date";
-        } |
-        {
-            type: "choice";
-            multi: boolean;
-            options: Option<any>[];
-        } |
-        {
-            type: "textarea",
-        }
+            view: "input" | "checkbox" | "dropdown" | "textarea",
+        } | Waiting
     )
-) |
-(
-    {
-        id: string;
-    } &
-    Waiting
 );
 
 export type FieldGroup = Description & {
-    fields: Field[];
+    fields: (Description & FieldRef)[];
 }
 
-export type FieldValue = Pick<Field, "id"> & {
+export type FieldValueSpec = {
+    id: string;
     value: any;
+    options?: Option<any>[];
+    allowMulti?: true;
 }
+
+export type Field = Description & FieldRef & FieldValueSpec;
+
+export type FieldValue = Pick<Field, "id" | "value">;
 
 export type Entry<T> = Description & {
     id: string;
@@ -50,33 +40,42 @@ export type Entry<T> = Description & {
 }
 
 export type Waiting = {
-    type: "waiting";
+    view: "waiting";
     value: string;
 }
 
 export interface ClientAPI<T> {
     id: string;
-    getFields(): FieldGroup[];
-    setValue(values: Record<string, FieldValue>, value: FieldValue): Record<string, FieldValue>;
+    getGroups(): FieldGroup[];
+    getInitialValues(): Record<string, FieldValueSpec>;
+    getValues(values: Record<string, FieldValue>, value: FieldValue): Record<string, FieldValueSpec>;
     getResults(values: Record<string, FieldValue>): Entry<T | Waiting>[];
 }
 
 export class StaticClientAPI<T> implements ClientAPI<T>{
     private _fieldGroups: FieldGroup[];
+    private _initialValues: Record<string, FieldValueSpec>;
     readonly id: string;
 
-    constructor(id: string, fieldGroups: FieldGroup[]) {
+    constructor(id: string, fieldGroups: FieldGroup[], initialValues: Record<string, FieldValueSpec>) {
         this.id = id;
         this._fieldGroups = fieldGroups;
+        this._initialValues = initialValues;
     }
 
-    getFields(): FieldGroup[] {
+    getGroups(): FieldGroup[] {
         return this._fieldGroups;
     }
-    setValue(values: Record<string, FieldValue>, value: FieldValue): Record<string, FieldValue> {
+    getInitialValues(): Record<string, FieldValueSpec> {
+        return this._initialValues;
+    }
+    getValues(values: Record<string, FieldValue>, value: FieldValue): Record<string, FieldValueSpec> {
         return {
             ...values,
-            [value.id]: value.value
+            [value.id]: {
+                ...(values[value.id] || {}),
+                ...value.value
+            }
         }
     }
     getResults(_values: Record<string, FieldValue>): Entry<T | Waiting>[] {
@@ -85,7 +84,7 @@ export class StaticClientAPI<T> implements ClientAPI<T>{
                 id: "waiting",
                 label: "Waiting",
                 content: {
-                    type: "waiting",
+                    view: "waiting",
                     value: "This is just mock data"
                 }
             }

@@ -1,4 +1,7 @@
-import { InputField, CheckBox, DropDown } from "../Fields"
+import React from "react";
+import { InputField, CheckBox, DropDown } from "../Fields";
+import { Field, FieldGroup, FieldValueSpec } from "../../modules/ClientAPI";
+import { ClientContext } from "../../modules/ClientContext";
 import "./App.css"
 
 type MenuItem = {
@@ -46,6 +49,47 @@ function Footer(_props: {}) {
     )
 }
 
+function FieldView({field}: {field: Field}) {
+    switch(field.view) {
+        case "input": return (
+            <InputField type="text" label={field.label} />
+        );
+        case "checkbox": return (
+            <CheckBox label={field.label} />
+        );
+        case "dropdown": return (
+            <DropDown label={field.label} options={field.options || []}/>
+        );
+    }
+}
+
+function FieldGroupView({group, children}: React.PropsWithChildren<{group: FieldGroup}>) {
+    return (
+        <fieldset>
+            <legend>{group.label}</legend>
+            {group.description ? <p>{group.description}</p> : <></>}
+            {React.Children.toArray(children).map((c, ci) => (
+                <div key={ci}>{c}</div>
+            ))}
+        </fieldset>
+    )
+}
+
+function FormView({fieldGroups, initialValues, onSubmit}: {fieldGroups: FieldGroup[], initialValues: Record<string, FieldValueSpec>, onSubmit?: () => void}) {
+    return (
+        <form>
+            {fieldGroups.map((group, gi) => (
+                <FieldGroupView key={gi} group={group}>
+                    {group.fields.map((field, fi) => (
+                        <FieldView key={fi} field={{...field, ...initialValues[field.id]}}/>
+                    ))}
+                </FieldGroupView>
+            ))}
+            <button type="submit">Submit</button>
+        </form>
+    );
+}
+
 export function App(_props: {path: string}) {
     const menuItems: MenuItem[] = [
         {
@@ -53,24 +97,17 @@ export function App(_props: {path: string}) {
             href: "https://github.com/NBISweden/PLP_Design_Portal"
         }
     ]
+    const client = React.useContext(ClientContext);
     return (
         <>
             <Header title="ISS Probe design" menuItems={menuItems} />
             <main>
                 <section>
                     <h2>Input</h2>
-                    <form>
-                        <fieldset>
-                            <legend>Input</legend>
-                            <InputField type="text" label="Text:"/>
-                            <CheckBox label="FASTA input: Source sequence is absent in reference genome:"/>
-                        </fieldset>
-                        <fieldset>
-                            <legend>Distance</legend>
-                                <DropDown options={[0,1].map(o => ({value: o, label: `${o}`}))} label="Choose an option:"/>
-                        </fieldset>
-                        <button type="submit">Submit</button>
-                    </form>
+                    <FormView
+                        fieldGroups={client.getGroups()}
+                        initialValues={client.getInitialValues()}
+                    />
                 </section>
             </main>
             <Footer />

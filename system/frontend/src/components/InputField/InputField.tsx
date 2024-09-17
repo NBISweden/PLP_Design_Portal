@@ -2,7 +2,7 @@ import React from "react";
 import './InputField.css'
 
 interface Props {
-    type: 'text' | 'number';
+    type: 'text' | 'number' | 'date';
     label: string;
     required?: boolean;
     name?: string;
