@@ -1,47 +1,11 @@
 import { InputField, CheckBox, DropDown } from "../Fields"
 import "./App.css"
-
-type MenuItem = {
-    label: string;
-} & (
-    {
-        href: string;
-    } | {
-        onClick: () => void;
-    }
-)
-
-function Header({title, menuItems}: {title: string, menuItems: MenuItem[]}) {
-    return (
-        <header>
-            <h1>{title}</h1>
-            <nav>
-                <ul>
-                    {menuItems.map((item, index) => (
-                        <li key={index}>
-                        {"href" in item
-                        ? (
-                            <a href={item.href}>
-                                {item.label}
-                            </a>
-                        )
-                        : (
-                            <a onClick={item.onClick}>
-                                {item.label}
-                            </a>
-                        )}
-                        </li>
-                    ))}
-                </ul>
-            </nav>
-        </header>
-    );
-}
+import {Header, MenuItem} from "../Header/Header";
 
 function Footer(_props: {}) {
     return (
-        <footer>
-            <p>Provided by NBIS system development</p>
+        <footer className="footer">
+            <p className="content has-text-centered">Provided by NBIS system development</p>
         </footer>
     )
 }
@@ -55,25 +19,35 @@ export function App(_props: {path: string}) {
     ]
     return (
         <>
-            <Header title="ISS Probe design" menuItems={menuItems} />
+            <Header title="ISS Probe design" subtitle="Design padlock probes for in-situ sequencing" menuItems={menuItems} />
+
             <main>
-                <section>
-                    <h2>Input</h2>
-                    <form>
-                        <fieldset>
-                            <legend>Input</legend>
-                            <InputField type="text" label="Text:"/>
-                            <CheckBox label="FASTA input: Source sequence is absent in reference genome:"/>
-                        </fieldset>
-                        <fieldset>
-                            <legend>Distance</legend>
-                                <DropDown options={[0,1].map(o => ({value: o, label: `${o}`}))} label="Choose an option:"/>
-                        </fieldset>
-                        <button type="submit">Submit</button>
-                    </form>
+                <section className="section">
+                    <div className="container">
+                        <h2 className="title has-text-centered">Input</h2>
+
+                        <div className="columns is-centered">
+                            <div className="column is-half">
+                                <form>
+                                    <fieldset className="box">
+                                        <legend className="label">Input</legend>
+                                        <InputField type="text" label="Text "/>
+                                        <CheckBox label="FASTA input: Source sequence is absent in reference genome:"/>
+                                    </fieldset>
+                                    <fieldset className="box">
+                                        <legend className="label">Distance</legend>
+                                        <DropDown options={[0, 1].map(o => ({ value: o, label: `${o}` }))} label="Choose an option:" />
+                                    </fieldset>
+                                        <button type="submit" className="button is-pulled-right has-background-grey has-text-white">Submit</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                 </section>
             </main>
+
             <Footer />
         </>
+
     );
 }

@@ -12,8 +12,13 @@ export function InputField({type, label, required, name}: Props) {
     const id = React.useId();
     return (
         <>
-            <label htmlFor={id}>{label}</label>
-            <input type={type} id={id} name={name} required={required} />
+            <div className="field">
+                <label className="label" htmlFor={id}>{label}</label>
+                <div className="control">
+                    <input className="input" type={type} id={id} name={name} required={required} />
+                </div>
+            </div>
         </>
+
     )
 }
