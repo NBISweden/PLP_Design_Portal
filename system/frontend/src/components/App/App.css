@@ -1,0 +1,7 @@
+@import "../../../node_modules/bulma/css/bulma.css";
+
+.footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+}
