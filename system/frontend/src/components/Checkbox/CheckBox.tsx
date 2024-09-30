@@ -13,16 +13,16 @@ export function CheckBox({label, required, name}: Props) {
         <>
             <div className="field">
                 <div className="control">
-                    <label className="checkbox" htmlFor={id}>
+                    <label className="checkbox mr-3" htmlFor={id}>
                         {label}
-                        <input
-                            type="checkbox"
-                            id={id}
-                            name={name}
-                            required={required}
-                            className="plp-checkbox"
-                        />
                     </label>
+                    <input
+                        type="checkbox"
+                        id={id}
+                        name={name}
+                        required={required}
+                        className="plp-checkbox"
+                    />
                 </div>
             </div>
         </>

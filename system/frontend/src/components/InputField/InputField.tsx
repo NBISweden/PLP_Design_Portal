@@ -6,16 +6,37 @@ interface Props {
     label: string;
     required?: boolean;
     name?: string;
+    placeholder?: string;
+    rows?: number;
+    isTextArea?: boolean;
 }
 
-export function InputField({type, label, required, name}: Props) {
+export function InputField({type, label, required, name, placeholder,rows, isTextArea}: Props) {
     const id = React.useId();
     return (
         <>
             <div className="field">
                 <label className="label" htmlFor={id}>{label}</label>
                 <div className="control">
-                    <input className="input" type={type} id={id} name={name} required={required} />
+                    {isTextArea ? (
+                        <textarea
+                            id={id}
+                            name={name}
+                            rows={rows}
+                            required={required}
+                            className="textarea"
+                            placeholder={placeholder}
+                        ></textarea>
+                    ) : (
+                        <input
+                            type={type}
+                            id={id}
+                            name={name}
+                            required={required}
+                            className="input"
+                            placeholder={placeholder}
+                        />
+                    )}
                 </div>
             </div>
         </>
