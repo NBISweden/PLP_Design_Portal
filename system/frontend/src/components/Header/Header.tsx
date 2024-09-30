@@ -26,7 +26,7 @@ export function Header({title, subtitle, menuItems}: Props) {
                             <p className="subtitle is-size-5 mr-4">{subtitle}</p>
                         </div>
                     </div>
-                    <div className="column is-flex is-offset-3">
+                    <div className="column is-flex is-offset-2">
                         <nav>
                             <ul className="is-flex">
                                 {menuItems.map((item, index) => (
