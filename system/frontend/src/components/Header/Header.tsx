@@ -16,17 +16,17 @@ interface Props {
 
 export function Header({title, subtitle, menuItems}: Props) {
     return (
-        <header className="header has-background-light">
+        <header className="header p-4 p-3-mobile has-background-light">
             <div className="container">
-                <div className="columns is-vcentered">
+                <div className="columns is-vcentered is-centered">
 
-                    <div className="column is-offset-1">
+                    <div className="column is-one-third">
                         <h1 className="title is-size-3 has-text-grey-dark">{title}</h1>
                         <div className="is-flex is-align-items-center">
-                            <p className="subtitle is-size-5 mr-4">{subtitle}</p>
+                            <p className="subtitle mr-4">{subtitle}</p>
                         </div>
                     </div>
-                    <div className="column is-flex is-offset-2">
+                    <div className="column is-flex is-justify-content-flex-end is-one-third">
                         <nav>
                             <ul className="is-flex">
                                 {menuItems.map((item, index) => (

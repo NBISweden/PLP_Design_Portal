@@ -27,7 +27,7 @@ export function DropDown( {options, label, required, name, range}: Props){
     return (
         <>
             <div className="field">
-                <label className="label" htmlFor={id}>{label}</label>
+                <label htmlFor={id}>{label}</label>
                 <div className="control">
                     <div className="select is-fullwidth">
                         <select id={id} name={name} required={required}>
