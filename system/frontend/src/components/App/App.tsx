@@ -15,7 +15,7 @@ export function App(_props: {path: string}) {
         {
             label: "View on GitHub",
             href: "https://github.com/NBISweden/PLP_Design_Portal"
-        }
+        },
     ]
     return (
         <>
@@ -23,12 +23,12 @@ export function App(_props: {path: string}) {
             <main>
                 <section className="section">
                     <div className="container">
-                        <h2 className="title has-text-centered">Input</h2>
+                        <h2 className="title is-size-4-mobile has-text-centered">Input</h2>
                         <div className="columns is-centered">
                             <div className="column is-two-thirds">
                                 <form>
                                     <fieldset className="box">
-                                        <legend className="label is-size-4 has-text-grey-dark">Source sequences for target design</legend>
+                                        <legend className="label is-size-5 has-text-weight-medium has-text-grey-dark">Source sequences for target design</legend>
                                         <InputField type="text" label="Ensembl gene/transcript name(s) or FASTA sequence " isTextArea="true" placeholder="ENSG00000171862" rows="5"/>
                                         <div className="columns is-vcentered">
                                             <div className="column">
@@ -41,7 +41,7 @@ export function App(_props: {path: string}) {
                                         <CheckBox label="FASTA input: Source sequence is absent in reference genome:"/>
                                     </fieldset>
                                     <fieldset className="box">
-                                        <legend className="label is-size-4 has-text-grey-dark">Probe design</legend>
+                                        <legend className="label is-size-5 has-text-weight-medium has-text-grey-dark">Probe design</legend>
                                         <div className="columns is-vcentered">
                                             <div className="column">
                                                 <InputField type="number" label="Probe arm length" />
@@ -55,7 +55,7 @@ export function App(_props: {path: string}) {
                                         <CheckBox label="Allow overlapping probes (default is non-overlapping):"/>
                                     </fieldset>
                                     <fieldset className="box">
-                                        <legend className="label is-size-4 has-text-grey-dark">Color code</legend>
+                                        <legend className="label is-size-5 has-text-weight-medium has-text-grey-dark">Color code</legend>
                                         <div className="columns is-vcentered">
                                             <div className="column">
                                                 <DropDown range={{ start: 2, end: 8 }} label="Amount of colors" />
@@ -66,7 +66,7 @@ export function App(_props: {path: string}) {
                                         </div>
                                     </fieldset>
                                     <fieldset className="box">
-                                        <legend className="label is-size-4 has-text-grey-dark">Anchor and spacer sequences</legend>
+                                        <legend className="label is-size-5 has-text-weight-medium has-text-grey-dark">Anchor and spacer sequences</legend>
                                         <div className="columns is-vcentered">
                                             <div className="column">
                                                 <InputField type="text" label="Anchor " isTextArea="true" placeholder="TGCGTCTATTTAGTGGAGCC" rows="1"/>
@@ -80,6 +80,7 @@ export function App(_props: {path: string}) {
                                         </div>
                                     </fieldset>
                                     <fieldset className="box">
+                                        <legend className="label is-size-5 has-text-weight-medium has-text-grey-dark">Genome</legend>
                                         <DropDown label="Select genome"
                                                   options={[
                                                       "Arabidopsis thaliana - TAIR10",

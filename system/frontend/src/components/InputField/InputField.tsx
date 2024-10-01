@@ -16,7 +16,7 @@ export function InputField({type, label, required, name, placeholder,rows, isTex
     return (
         <>
             <div className="field">
-                <label className="label" htmlFor={id}>{label}</label>
+                <label htmlFor={id}>{label}</label>
                 <div className="control">
                     {isTextArea ? (
                         <textarea
