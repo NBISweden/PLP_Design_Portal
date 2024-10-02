@@ -29,7 +29,7 @@ export function App(_props: {path: string}) {
                                 <form>
                                     <fieldset className="box">
                                         <legend className="label is-size-5 has-text-weight-medium has-text-grey-dark">Source sequences for target design</legend>
-                                        <InputField type="text" label="Ensembl gene/transcript name(s) or FASTA sequence " isTextArea="true" placeholder="ENSG00000171862" rows="5"/>
+                                        <InputField type="textarea" label="Ensembl gene/transcript name(s) or FASTA sequence" placeholder="ENSG00000171862" rows={5}/>
                                         <div className="columns is-vcentered">
                                             <div className="column">
                                                 <DropDown options={["gene_id", "transcript_id"].map(o => ({ value: o, label: `${o}` }))} label="Attribute identifier" />
@@ -69,13 +69,13 @@ export function App(_props: {path: string}) {
                                         <legend className="label is-size-5 has-text-weight-medium has-text-grey-dark">Anchor and spacer sequences</legend>
                                         <div className="columns is-vcentered">
                                             <div className="column">
-                                                <InputField type="text" label="Anchor " isTextArea="true" placeholder="TGCGTCTATTTAGTGGAGCC" rows="1"/>
+                                                <InputField type="textarea" label="Anchor" placeholder="TGCGTCTATTTAGTGGAGCC" rows={1}/>
                                             </div>
                                             <div className="column">
-                                                <InputField type="text" label="Spacer left " isTextArea="true" placeholder="TCCTC" rows="1"/>
+                                                <InputField type="textarea" label="Spacer left" placeholder="TCCTC" rows={1}/>
                                             </div>
                                             <div className="column">
-                                                <InputField type="text" label="Spacer right " isTextArea="true" placeholder="TCTTT" rows="1"/>
+                                                <InputField type="textarea" label="Spacer right" placeholder="TCTTT" rows={1}/>
                                             </div>
                                         </div>
                                     </fieldset>
@@ -94,8 +94,8 @@ export function App(_props: {path: string}) {
                                                       "Saccharomyces cerevisiae - R64",
                                                       "SARS-CoV-2 - NC_045512.2"].map(o => ({ value: o, label: `${o}` }))}/>
                                     </fieldset>
-                                        <button type="submit" className="button is-pulled-right has-background-grey has-text-white">Launch analysis</button>
-                                        <button type="submit" className="button is-pulled-right has-background-grey has-text-white">Show example</button>
+                                    <button type="submit" className="button is-pulled-right has-background-grey has-text-white">Launch analysis</button>
+                                    <button type="submit" className="button is-pulled-right has-background-grey has-text-white">Show example</button>
                                 </form>
                             </div>
                         </div>
