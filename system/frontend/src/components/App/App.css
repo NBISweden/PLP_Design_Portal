@@ -1,5 +1,18 @@
 @import "../../../node_modules/bulma/css/bulma.css";
 
+
+.header {
+    flex-grow: 0;
+    flex-shrink: 0;
+}
+
+main {
+    flex-grow: 1;
+    flex-shrink: 0;
+}
+
 .footer {
     width: 100%;
+    flex-grow: 0;
+    flex-shrink: 0;
 }
