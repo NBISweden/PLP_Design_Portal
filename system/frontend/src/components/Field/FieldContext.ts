@@ -3,6 +3,7 @@ import React from "react";
 
 export type FieldDef = {
     id: string;
+    required?: boolean;
 } & ({
     type: "choice",
     options: string[] | number[];

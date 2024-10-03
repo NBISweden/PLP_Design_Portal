@@ -26,22 +26,23 @@ export function FieldView(props: {
         ? `${fieldDef.placeholder}`
         : ""
     );
+    const required = fieldDef.required === undefined ? false : fieldDef.required;
 
     if (widget !== undefined) {
-        return widget({label, type: fieldDef.type, name, default: defaultValue, options, placeholder})
+        return widget({label, type: fieldDef.type, name, default: defaultValue, options, placeholder, required})
     } else {
         switch (fieldDef.type) {
             case "choice": {
-                return <DropDown label={label} name={name} options={options}/>
+                return <DropDown label={label} name={name} options={options} required={required}/>
             }
             case "number": {
-                return <InputField type="number" name={name} label={label} placeholder={placeholder}/>
+                return <InputField type="number" name={name} label={label} placeholder={placeholder} required={required}/>
             }
             case "text": {
-                return <InputField type="text" name={name} label={label} placeholder={fieldDef.placeholder}/>
+                return <InputField type="text" name={name} label={label} placeholder={fieldDef.placeholder} required={required}/>
             }
             case "yesno": {
-                return <CheckBox name={name} label={label} />
+                return <CheckBox name={name} label={label} required={required}/>
             }
         }
     }
