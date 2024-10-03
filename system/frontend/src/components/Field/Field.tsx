@@ -17,20 +17,24 @@ export function FieldView(props: {
         fieldDef.type == "choice"
         ? fieldDef.options.map(o => ({
             value: o,
-            label: t(`fields.${fieldDef.id}.options.${o}`)
+            label: t(`fields.${fieldDef.id}.options.${o}`, `${o}`)
         }))
         : []
     );
+    const placeholder = (
+        "placeholder" in fieldDef && fieldDef.placeholder !== undefined 
+        ? `${fieldDef.placeholder}`
+        : ""
+    );
 
     if (widget !== undefined) {
-        return widget({label, type: fieldDef.type, name, default: defaultValue, options})
+        return widget({label, type: fieldDef.type, name, default: defaultValue, options, placeholder})
     } else {
         switch (fieldDef.type) {
             case "choice": {
                 return <DropDown label={label} name={name} options={options}/>
             }
             case "number": {
-                const placeholder = fieldDef.placeholder === undefined ? "" : `${fieldDef.placeholder}`;
                 return <InputField type="number" name={name} label={label} placeholder={placeholder}/>
             }
             case "text": {
