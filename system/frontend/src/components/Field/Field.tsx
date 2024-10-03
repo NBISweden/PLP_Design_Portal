@@ -1,24 +1,32 @@
 import { InputField, CheckBox, DropDown} from "../Fields"
 import { useField, FieldDef } from "./FieldContext";
+import { useTranslation } from "react-i18next";
 
 
 export function FieldView(props: {
     fieldDef: FieldDef,
     widget?: (props: any) => JSX.Element
 }) {
+    const {t} = useTranslation();
     const fieldDef = props.fieldDef;
     const widget = props.widget;
-    const label = fieldDef.id;
+    const label = t(`fields.${fieldDef.id}.label`);
     const name = fieldDef.id;
     const defaultValue = fieldDef.default;
+    const options = (
+        fieldDef.type == "choice"
+        ? fieldDef.options.map(o => ({
+            value: o,
+            label: t(`fields.${fieldDef.id}.options.${o}`)
+        }))
+        : []
+    );
 
     if (widget !== undefined) {
-        const options = fieldDef.type == "choice" ? fieldDef.options.map(o => ({ value: o, label: `${o}` })) : [];
         return widget({label, type: fieldDef.type, name, default: defaultValue, options})
     } else {
         switch (fieldDef.type) {
             case "choice": {
-                const options = fieldDef.options.map(o => ({ value: o, label: `${o}` }))
                 return <DropDown label={label} name={name} options={options}/>
             }
             case "number": {
