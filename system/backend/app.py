@@ -1,11 +1,20 @@
 from flask import (
     Flask,
     jsonify,
-    send_file
+    send_file,
+    request,
 )
 import os
 import logging
 from flask_compress import Compress
+
+
+
+def parse_plp_query(args):
+    return {
+        key: str(value)
+        for (key, value) in args.items()
+    }
 
 
 def create_app():
@@ -23,6 +32,11 @@ def create_app():
     @app.route('/api')
     def root():
         return jsonify({"message": "Hello from PLP Design Portal!"})
+    
+    @app.route('/api/plp_search')
+    def plp_search():
+        data = parse_plp_query(request.args)
+        return jsonify({"data": data})
 
     @app.route('/')
     def index():
