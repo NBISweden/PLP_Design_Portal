@@ -30,11 +30,17 @@ _setup_manage() {
 		${COMPOSE} --profile prod "$@"
 	}
 
+	lint() {
+		source "$SCRIPTS/lint.sh"
+		lint "$@"
+	}
+
 	_add_action "node" "Runs command using node" "node [...node flags and args]"
 	_add_action "npm" "Runs command using npm" "npm [...npm flags and args]"
 	_add_action "npx" "Runs command using npx" "npx [...npx flags and args]"
 	_add_action "dev" "Starts development environment" "dev [up|down|stop]"
 	_add_action "prod" "Starts production like environment" "prod [up|down|stop]"
+	_add_action "lint" "Run linting commands" "lint [help|backend|frontend|all]"
 }
 
 manage() {

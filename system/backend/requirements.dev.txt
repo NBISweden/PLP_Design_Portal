@@ -1,2 +1,4 @@
 commitizen
 pytest
+mypy
+flake8
