@@ -7,10 +7,9 @@ services:
     stop_signal: SIGINT
     profiles:
       - dev
-    ports:
-      - 127.0.0.1:${FRONTEND_PORT:-5173}:${FRONTEND_PORT:-5173}
     volumes:
       - ./system/frontend/:${FRONTEND_SRC_DIR:-/opt/builder}
+      - shared_build:/opt/builder/dist
 
   backend:
     build:
@@ -24,6 +23,7 @@ services:
       - 127.0.0.1:${BACKEND_PORT:-5000}:${BACKEND_PORT:-5000}
     volumes:
       - ./system/backend/:${BACKEND_SRC_DIR:-/opt/app}
+      - shared_build:/opt/app/static
     
   app:
     build:
@@ -35,3 +35,6 @@ services:
       - prod
     ports:
       - 127.0.0.1:${BACKEND_PORT:-5000}:${BACKEND_PORT:-5000}
+
+volumes:
+  shared_build:
