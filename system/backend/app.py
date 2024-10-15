@@ -36,14 +36,17 @@ def create_app():
     def plp_search():
         data = parse_plp_query(request.args)
         return jsonify({"data": data})
+    
+    @app.route('/config.json')
+    def config():
+        return jsonify({
+            "rootUrl": f"{request.host_url}api/plp_search",
+            "id": "plp",
+            "language": "en",
+        })
 
     @app.route('/')
     def index():
         return send_file(f"{app.static_folder}/index.html")
 
     return app
-
-
-if __name__ == "__main__":
-    app = create_app()
-    app.run(host='0.0.0.0', port=8000)
