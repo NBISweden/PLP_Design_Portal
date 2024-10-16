@@ -1,22 +1,14 @@
 import { Header, MenuItem } from "../Header/Header";
 import { Service } from "../Service/Service";
 import { Result } from "../Result/Result";
-
 import {
     createBrowserRouter,
     RouterProvider,
     redirect,
 } from "react-router-dom";
 import "./App.css";
+import {Footer} from "../Footer/Footer";
 
-
-function Footer(_props: {}) {
-    return (
-        <footer className="footer">
-            <p className="content has-text-centered">Provided by NBIS system development</p>
-        </footer>
-    )
-}
 
 export function App(_props: {}) {
     const menuItems: MenuItem[] = [
@@ -39,14 +31,15 @@ export function App(_props: {}) {
             element: <Result />,
         },
     ]);
-    
+
     return (
         <>
-            <Header title="ISS Probe design" subtitle="Design padlock probes for in-situ sequencing" menuItems={menuItems} />
+            <Header title="ISS Probe design" subtitle="Design padlock probes for in-situ sequencing"
+                    menuItems={menuItems}/>
             <main>
                 <RouterProvider router={router} />
             </main>
-            <Footer />
+            <Footer/>
         </>
 
     );

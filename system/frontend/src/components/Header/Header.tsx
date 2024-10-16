@@ -1,3 +1,5 @@
+import "./Header.css";
+
 export type MenuItem = {
     label: string;
 } & (
@@ -49,7 +51,5 @@ export function Header({title, subtitle, menuItems}: Props) {
                 </div>
             </div>
         </header>
-
-
     );
 }
