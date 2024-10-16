@@ -1,0 +1,29 @@
+- Portal for a collection of services
+- Main features:
+    - List services
+    - Data driven theming
+    - Allow searches for each service independently
+    - Store result caches in local storage (clearly indicated to which service they belong)
+    - Allow simplified single service operations when only one service is available
+    - Customizable shortcuts to user selected services on the front page
+- Main views:
+    - Home: "index"
+        - Includes a random selection of services unless the user has made a custom selection
+    - List services: "services"
+        - List all services with images, names and description
+            - Allow for "pinning" to home
+            - Allow navigation to services
+        - Filtering and sorting
+    - Use service: "services/<service_id>"
+        - Show service form and allow it to be executed
+        - A successful execution navigates to the "Single result view" with a given result id
+    - Result list: "results"
+        - List all cached results
+        - Results should show the related service name and some basic result properties
+        - The list should allow sorting and filtering
+        - Allow download of result-cache
+    - Single result: "results/<result_id>"
+        - Show a specific result
+        - Clearly indicate from which service the result is produced
+        - Clearly indicate date and time of result
+        - Allow result export/download
