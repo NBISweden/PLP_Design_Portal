@@ -50,7 +50,7 @@ async function main() {
     <StrictMode>
       <ClientContext.Provider value={clientAPI}>
         <FieldContext.Provider value={fieldManager}>
-          <App path="root"/>
+          <App />
         </FieldContext.Provider>
       </ClientContext.Provider>
     </StrictMode>,
