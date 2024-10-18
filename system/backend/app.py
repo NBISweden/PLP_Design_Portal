@@ -36,7 +36,7 @@ def create_app():
     def plp_search():
         data = parse_plp_query(request.args)
         return jsonify({"data": data})
-    
+
     @app.route('/config.json')
     def config():
         return jsonify({
@@ -47,6 +47,10 @@ def create_app():
 
     @app.route('/')
     def index():
+        return send_file(f"{app.static_folder}/index.html")
+
+    @app.errorhandler(404)
+    def http_404_error_handler(error):
         return send_file(f"{app.static_folder}/index.html")
 
     return app
