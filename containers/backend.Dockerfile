@@ -14,7 +14,7 @@ RUN mkdir -p "$BACKEND_SRC_DIR"
 WORKDIR "$BACKEND_SRC_DIR"
 RUN mkdir -p static/
 
-COPY backend/requirements.txt requirements.txt
+COPY --from=system backend/requirements.txt requirements.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install -r requirements.txt
 
@@ -25,7 +25,7 @@ EXPOSE ${APP_PORT:-5000}/tcp
 ########################################
 FROM base AS dev
 
-COPY backend/requirements.dev.txt requirements.dev.txt
+COPY --from=system backend/requirements.dev.txt requirements.dev.txt
 
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install -r requirements.dev.txt
@@ -40,7 +40,7 @@ ARG FRONTEND_SRC_DIR
 RUN mkdir -p "$FRONTEND_SRC_DIR"
 WORKDIR "$FRONTEND_SRC_DIR"
 
-COPY ./frontend/ "$FRONTEND_SRC_DIR/"
+COPY --from=system frontend/ "$FRONTEND_SRC_DIR/"
 
 RUN npm install ci
 RUN npm run build
@@ -49,7 +49,7 @@ RUN npm run build
 FROM base AS prod
 ARG FRONTEND_SRC_DIR
 
-COPY backend/ ./
+COPY --from=system backend/ ./
 RUN chmod +x start-script.sh
 COPY --from=builder "$FRONTEND_SRC_DIR/dist/" static/
 

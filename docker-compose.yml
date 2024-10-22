@@ -1,8 +1,8 @@
 services:
   frontend:
     build:
-      context: system/frontend
-      dockerfile: ../../containers/frontend.Dockerfile
+      context: .
+      dockerfile: ./containers/frontend.Dockerfile
       target: dev
     stop_signal: SIGINT
     profiles:
@@ -13,9 +13,11 @@ services:
 
   backend:
     build:
-      context: system
-      dockerfile: ../containers/backend.Dockerfile
+      context: .
+      dockerfile: ./containers/backend.Dockerfile
       target: dev
+      additional_contexts:
+        system: ./system
     stop_signal: SIGINT
     profiles:
       - dev
@@ -27,9 +29,11 @@ services:
     
   app:
     build:
-      context: system
-      dockerfile: ../containers/backend.Dockerfile
+      context: .
+      dockerfile: ./containers/backend.Dockerfile
       target: prod
+      additional_contexts:
+        system: ./system
     stop_signal: SIGINT
     profiles:
       - prod
