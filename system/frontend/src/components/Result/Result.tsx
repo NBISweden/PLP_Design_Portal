@@ -1,7 +1,13 @@
 import { useTranslation } from "react-i18next";
+import { useParams } from 'react-router-dom';
+import { useResults } from "../Result/ResultContext";
 
 export function Result(_props: {}) {
     const {t} = useTranslation();
+    const {resultId} = useParams();
+    const results = useResults();
+    const result = resultId ? results.getResult({id: resultId}) : null;
+
     return (
         <section className="section">
             <div className="container">
@@ -79,6 +85,13 @@ export function Result(_props: {}) {
                                 </tbody>
                             </table>
                         </div>
+                        {result ? (
+                            result.result.map((entry, index) => (
+                                <div key={index}>
+                                    {JSON.stringify(entry)}
+                                </div>
+                            ))
+                        ) : null}
                     </div>
                 </div>
             </div>

@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { StrictMode, useMemo } from 'react'
 import { createRoot } from 'react-dom/client'
 import { App } from "./components/App/App";
 import { initReactI18next } from 'react-i18next';
@@ -7,6 +7,7 @@ import './index.css'
 import { translationResources, fields as defaultFields } from "./modules/PLP";
 import { StaticFieldManager, FieldContext } from "./components/Fields";
 import { ClientContext, HttpClientAPI } from './modules/Client';
+import { ResultContext, ResultCache, createCachingResultManager } from "./components/Result/ResultContext"
 
 
 async function fetchOrDefault<T>(path: string | undefined, defaultData: T): Promise<T> {
@@ -50,11 +51,45 @@ async function main() {
     <StrictMode>
       <ClientContext.Provider value={clientAPI}>
         <FieldContext.Provider value={fieldManager}>
-          <App />
+          <Main resultDataId={"result-cache"}/>
         </FieldContext.Provider>
       </ClientContext.Provider>
     </StrictMode>,
   );
+}
+
+function Main(props: {resultDataId: string}) {
+  const {resultDataId} = props;
+  const initialData = useMemo<{results: ResultCache<any>, enumerator: number}>(() => {
+    const rawData = localStorage.getItem(resultDataId);
+    return rawData ? JSON.parse(rawData) : {
+      results: {},
+      enumerator: 0
+    }
+  }, [resultDataId]);
+  const onCacheUpdated = useMemo(
+    () => {
+      return (results: ResultCache<any>, enumerator: number) => {
+        const rawData = JSON.stringify({
+          results,
+          enumerator
+        });
+        console.log(rawData);
+        localStorage.setItem(resultDataId, rawData);
+      }
+    },
+    [resultDataId]
+  );
+  const resultManager = createCachingResultManager<any>(
+    initialData.results,
+    initialData.enumerator,
+    onCacheUpdated,
+  );
+  return (
+    <ResultContext.Provider value={resultManager}>
+      <App />
+    </ResultContext.Provider>
+  )
 }
 
 main();

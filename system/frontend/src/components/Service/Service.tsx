@@ -1,11 +1,15 @@
 import { FormEventHandler } from "react";
 import { useFields } from "../Fields";
 import { useClient } from "../../modules/Client";
-import {Form} from "../Form/Form";
+import { Form } from "../Form/Form";
+import { useResults } from "../Result/ResultContext";
+import { useNavigate } from "react-router-dom";
 
 export function Service(_props: {}) {
     const fieldDefs = useFields()
     const client = useClient();
+    const results = useResults();
+    const navigate = useNavigate();
     const handleSubmit: FormEventHandler = async (event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -15,9 +19,9 @@ export function Service(_props: {}) {
             acc[fd.id] = `${value}`;
             return acc;
         }, {});
-        console.log("values", values)
-        const result = await client.getResults(values);
-        console.log(result);
+        const query = await client.query(values);
+        const resultRef = results.addResult(query);
+        navigate(`/results/${resultRef.id}`)
     }
     return (
         <section className="section">

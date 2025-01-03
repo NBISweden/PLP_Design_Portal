@@ -35,7 +35,13 @@ def create_app():
     @app.route('/api/plp_search')
     def plp_search():
         data = parse_plp_query(request.args)
-        return jsonify({"data": data})
+        return jsonify([
+            {
+                "id": "plp-search",
+                "label": "PLP Search",
+                "content": data
+            }
+        ])
 
     @app.route('/config.json')
     def config():
