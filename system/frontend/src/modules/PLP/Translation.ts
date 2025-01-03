@@ -2,7 +2,8 @@ export const translationResources = {
     en: {
         translation: {
             "results": {
-                "title": "Results"
+                "title": "Results",
+                "download_file": "Download '{{name}}'"
             },
             "services": {
                 "plp": {

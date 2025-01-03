@@ -7,6 +7,7 @@ from flask import (
 import os
 import logging
 from flask_compress import Compress  # type: ignore
+from dataclasses import dataclass, asdict
 
 
 def parse_plp_query(args: dict[str, str]):
@@ -14,6 +15,20 @@ def parse_plp_query(args: dict[str, str]):
         key: str(value)
         for (key, value) in args.items()
     }
+
+
+@dataclass
+class TableData:
+    headers: dict[str, str]
+    entries: list[dict[str, str]]
+    type: str = "table"
+
+
+@dataclass
+class Result:
+    id: str
+    label: str
+    content: TableData
 
 
 def create_app():
@@ -35,12 +50,22 @@ def create_app():
     @app.route('/api/plp_search')
     def plp_search():
         data = parse_plp_query(request.args)
+        result = Result(
+            id="plp-search",
+            label="PLP Search",
+            content=TableData(
+                headers={
+                    "value": "Value",
+                    "param": "Param"
+                },
+                entries=[
+                    {"param": param, "value": value}
+                    for param, value in data.items()
+                ]
+            )
+        )
         return jsonify([
-            {
-                "id": "plp-search",
-                "label": "PLP Search",
-                "content": data
-            }
+            asdict(result)
         ])
 
     @app.route('/config.json')

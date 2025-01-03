@@ -74,7 +74,6 @@ function Main(props: {resultDataId: string}) {
           results,
           enumerator
         });
-        console.log(rawData);
         localStorage.setItem(resultDataId, rawData);
       }
     },
