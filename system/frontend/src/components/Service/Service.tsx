@@ -20,7 +20,7 @@ export function Service(_props: {}) {
             return acc;
         }, {});
         const query = await client.query(values);
-        const resultRef = results.addResult(query);
+        const resultRef = results.addResult(query, client.id);
         navigate(`/results/${resultRef.id}`)
     }
     return (

@@ -3,7 +3,7 @@ import { Query, Result } from "../../modules/Client"
 
 
 interface ResultManager<T> {
-    addResult(query: Query<T>): {id: string};
+    addResult(query: Query<T>, namespace?: string): {id: string};
     getResult(ref: {id: string}): {id: string; result: Result<T>};
     results(): {id: string}[];
 }
@@ -27,9 +27,9 @@ export function createCachingResultManager<T>(
     }, [onChange, results, enumerator])
 
     return {
-        addResult(query: Query<Result<T>>): {id: string} {
+        addResult(query: Query<Result<T>>, namespace: string ="result"): {id: string} {
             setEnumerator(enumerator + 1)
-            const id: string = `result-${enumerator}`
+            const id: string = `${namespace}-${enumerator}`
             setResults((r) => ({
                 ...r,
                 [id]: {
