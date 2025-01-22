@@ -44,7 +44,6 @@ function tableToTSV(headers: {[id: string]: string}, entries: {[x: string]: stri
 function downloadData(data: any, mimeType: string, fileName: string) {
     const blob = new Blob([data], {type: mimeType});
     const url = window.URL.createObjectURL(blob);
-    console.log(url)
     const link = document.createElement("a");
     link.download = fileName;
     link.href = url;

@@ -10,7 +10,7 @@ export function Service(_props: {}) {
     const client = useClient();
     const results = useResults();
     const navigate = useNavigate();
-    const handleSubmit: FormEventHandler = async (event) => {
+    const handleSubmit: FormEventHandler = (event) => {
         event.preventDefault();
         event.stopPropagation();
         const values = fieldDefs.reduce<{[x: string]: string}>((acc, fd) => {
@@ -19,9 +19,9 @@ export function Service(_props: {}) {
             acc[fd.id] = `${value}`;
             return acc;
         }, {});
-        const query = await client.query(values);
+        const query = client.query(values);
         const resultRef = results.addResult(query, client.id);
-        navigate(`/results/${resultRef.id}`)
+        navigate(`/results/${resultRef.id}`);
     }
     return (
         <section className="section">
