@@ -10,14 +10,15 @@ export type Entry<T> = Description & {
     content: T;
 }
 
-export type Waiting = {
-    type: "waiting";
-    value: string;
+export interface Query<T> {
+    get(): Promise<T>;
 }
+
+export type Result<T> = Entry<T>[];
 
 export interface ClientAPI<T> {
     id: string;
-    getResults(values: Record<string, string>): Promise<Entry<T | Waiting>[]>;
+    query(values: Record<string, string>): Query<Result<T>>;
 }
 
 export class HttpClientAPI<T> implements ClientAPI<T>{
@@ -29,7 +30,16 @@ export class HttpClientAPI<T> implements ClientAPI<T>{
         this._rootUrl = rootUrl;
     }
 
-    async getResults(values: Record<string, string>): Promise<Entry<T | Waiting>[]> {
+    query(values: Record<string, string>): Query<Result<T>> {
+        const client = this;
+        return {
+            get() {
+                return client._getResults(values)
+            }
+        }
+    }
+
+    private async _getResults(values: Record<string, string>): Promise<Result<T>> {
         const url = new URL(this._rootUrl);
         url.search = (new URLSearchParams(values)).toString();
         return await (await fetch(url.toString())).json()
@@ -38,9 +48,13 @@ export class HttpClientAPI<T> implements ClientAPI<T>{
 
 export const ClientContext = React.createContext<ClientAPI<any>>({
     id: "none",
-    getResults: async (...args) => {
-        console.log(args);
-        return [];
+    query(values: Record<string, string>) {
+        return {
+            get() {
+                console.log(values);
+                return Promise.resolve([]);
+            }
+        }
     },
 });
 

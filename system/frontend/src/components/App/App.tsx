@@ -23,11 +23,11 @@ export function App(_props: {}) {
             loader: async () => redirect("/services/plp")
         },
         {
-            path: "/services/plp",
+            path: "/services/:serviceId",
             element: <Service />,
         },
         {
-            path: "/results",
+            path: "/results/:resultId",
             element: <Result />,
         },
     ]);
