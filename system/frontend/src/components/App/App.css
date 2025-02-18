@@ -1,5 +1,45 @@
 @import "../../../node_modules/bulma/css/bulma.css";
 
+:root {
+    --bulma-primary-h: 76deg;
+    --bulma-primary-s: 55%;
+    --bulma-primary-l: 65%;
+    --bulma-link-h: 185deg;
+    --bulma-link-s: 92%;
+    --bulma-link-l: 20%;
+    --bulma-info-h: 186deg;
+    --bulma-info-s: 30%;
+    --bulma-info-l: 73%;
+    --bulma-success-h: 76deg;
+    --bulma-success-s: 55%;
+    --bulma-warning-h: 26deg;
+    --bulma-warning-s: 91%;
+    --bulma-warning-l: 65%;
+    --bulma-danger-h: 17deg;
+    --bulma-danger-s: 91%;
+    --bulma-danger-l: 31%;
+    /*Custom CSS variables*/
+    --secondary-color: hsl(288deg, 46%, 22%);
+    --secondary-color-hover: hsl(288deg, 50%, 30%);
+    --secondary-color-active: hsl(288deg, 40%, 18%);
+}
+
+/* Secondary Button */
+.button.is-secondary-custom {
+    background-color: var(--secondary-color) !important;
+    color: white !important;
+    border: 1px solid var(--secondary-color-hover);
+    box-shadow: 2px 2px 5px hsl(288deg, 30%, 15%);
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.button.is-secondary-custom:hover {
+    background-color: var(--secondary-color-hover) !important;
+}
+
+.button.is-secondary-custom:active {
+    background-color: var(--secondary-color-active) !important;
+}
 
 .header {
     flex-grow: 0;

@@ -68,9 +68,9 @@ export function Form({ handleSubmit }: FormProps) {
             <legend className="label is-size-5 has-text-weight-medium has-text-grey-dark">Genome</legend>
             <Field id="genome.genome"/>
         </fieldset>
-        <button type="submit" className="button is-pulled-right has-background-grey has-text-white">Launch analysis
+        <button type="submit" className="button is-pulled-right is-primary">Launch analysis
         </button>
-        <button type="submit" className="button is-pulled-right has-background-grey has-text-white">Show example
+        <button type="submit" className="button is-pulled-right is-secondary-custom mr-3">Show example
         </button>
     </form>;
 }
