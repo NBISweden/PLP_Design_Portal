@@ -14,7 +14,8 @@ export function App(_props: {}) {
     const menuItems: MenuItem[] = [
         {
             label: "View on GitHub",
-            href: "https://github.com/NBISweden/PLP_Design_Portal"
+            href: "https://github.com/NBISweden/PLP_Design_Portal",
+            icon: "fa-brands fa-github"
         },
     ]
     const router = createBrowserRouter([

@@ -9,24 +9,31 @@ export function Result(_props: {}) {
     const result = resultId ? results.getResult({id: resultId}) : null;
 
     return (
-        <section className="section">
+        <section className="section has-background-custom-grey-light">
             <div className="container">
-                <h2 className="title is-size-4-mobile has-text-centered">{t("results.title")}</h2>
                 <div className="columns is-centered">
                     <div className="column is-two-thirds">
-                        {result ? (
-                            result.result.map((entry, index) => (
-                                <div key={index} className="table-container">
-                                    <h2 className="title is-size-5-mobile is-size-4 mt-4 has-text-weight-normal">{entry.label}</h2>
-                                    {entry.content.type === "table" ? (
-                                        <TableView headers={entry.content.headers} entries={entry.content.entries} name={entry.label}/>
-                                    ) : JSON.stringify(entry)}
+                        <div className="box">
+                            <h2 className="title is-size-4-mobile has-text-centered">{t("results.title")}</h2>
+                            <div className="columns is-centered">
+                                <div className="column is-two-thirds">
+                                    {result ? (
+                                        result.result.map((entry, index) => (
+                                            <div key={index} className="table-container">
+                                                <h2 className="title is-size-5-mobile is-size-4 mt-4 has-text-weight-normal">{entry.label}</h2>
+                                                {entry.content.type === "table" ? (
+                                                    <TableView headers={entry.content.headers} entries={entry.content.entries} name={entry.label}/>
+                                                ) : JSON.stringify(entry)}
+                                            </div>
+                                        ))
+                                    ) : null}
                                 </div>
-                            ))
-                        ) : null}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+
         </section>
     );
 }
@@ -65,7 +72,7 @@ function TableView(props: {headers: {[id: string]: string}, entries: {[x: string
 
     return (
         <>
-            <button type="submit" onClick={downloadTableTSV} className="button is-light">{t("results.download_file", {name: fileName})}</button>
+            <button type="submit" onClick={downloadTableTSV} className="button is-secondary-custom">{t("results.download_file", {name: fileName})}</button>
             <table className="table is-striped">
                 <thead>
                     <tr>

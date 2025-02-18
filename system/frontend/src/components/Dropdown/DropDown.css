@@ -1,0 +1,8 @@
+.dropdown.is-fullwidth {
+    display: flex;
+}
+.dropdown-trigger,
+.dropdown-menu {
+    width: 100%;
+}
+
