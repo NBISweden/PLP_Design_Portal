@@ -10,6 +10,17 @@ interface Props {
     name?: string;
 }
 
+
+function listenForClickOnce(action: () => void) {
+    const handleClick = () => {
+        action();
+        document.removeEventListener("click", handleClick, true);
+    }
+
+    document.addEventListener("click", handleClick, true);
+}
+
+
 export function DropDown( {options, label, name, range}: Props){
     const id = React.useId();
 
@@ -33,6 +44,13 @@ export function DropDown( {options, label, name, range}: Props){
         setIsOpen(false); // Close dropdown after selection
     };
 
+    const handleClick = () => {
+        setIsOpen(!isOpen)
+        listenForClickOnce(() => {
+            setIsOpen(false)
+        })
+    }
+
     return (
         <>
             <div className="field">
@@ -40,7 +58,7 @@ export function DropDown( {options, label, name, range}: Props){
                 <div className="control">
                     <div className={`dropdown is-fullwidth ${isOpen ? "is-active" : ""}`}>
                         <div className="dropdown-trigger">
-                            <button className="button is-fullwidth is-flex is-justify-content-space-between" onClick={() => setIsOpen(!isOpen)}>
+                            <button type="button" className="button is-fullwidth is-flex is-justify-content-space-between" onClick={handleClick}>
                                 <span>{dropdownOptions.find((opt) => opt.value === selected)?.label || "Select an option"}</span>
                                 <span className="icon is-small">
                                 <i className="fas fa-angle-down"></i>
