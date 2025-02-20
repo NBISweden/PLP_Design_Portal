@@ -1,0 +1,7 @@
+.header-image {
+    position: relative;
+    background-image: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, var(--bulma-info-light) calc(max(300px, 15%))), url(../../img/dna_string_lime.png);
+    background-size: auto 100%;
+    background-position: left center;
+    background-repeat: no-repeat;
+}

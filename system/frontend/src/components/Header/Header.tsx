@@ -1,5 +1,4 @@
 import "./Header.css";
-import dnaString from '../../img/dna_string_lime.jpg';
 
 export type MenuItem = {
     label: string;
@@ -21,14 +20,7 @@ interface Props {
 export function Header({title, subtitle, menuItems}: Props) {
     return (
         <header
-            className="header p-4 p-3-mobile"
-            style={{
-                position: 'relative',
-                backgroundImage: `linear-gradient(to right, rgba(255, 255, 255, 0) 0%, var(--bulma-info-light) 15%), url(${dnaString})`,
-                backgroundSize: 'contain',
-                backgroundPosition: 'left center',
-                backgroundRepeat: 'no-repeat',
-            }}
+            className="header p-4 p-3-mobile header-image"
         >
             <div className="container">
                 <div className="columns is-vcentered is-centered">
