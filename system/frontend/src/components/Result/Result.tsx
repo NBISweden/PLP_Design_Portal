@@ -12,22 +12,20 @@ export function Result(_props: {}) {
         <section className="section has-background-custom-grey-light">
             <div className="container">
                 <div className="columns is-centered">
-                    <div className="column is-two-thirds">
+                    <div className="column">
                         <div className="box">
                             <h2 className="title is-size-4-mobile has-text-centered">{t("results.title")}</h2>
                             <div className="columns is-centered">
-                                <div className="column is-two-thirds">
-                                    {result ? (
-                                        result.result.map((entry, index) => (
-                                            <div key={index} className="table-container">
-                                                <h2 className="title is-size-5-mobile is-size-4 mt-4 has-text-weight-normal">{entry.label}</h2>
-                                                {entry.content.type === "table" ? (
-                                                    <TableView headers={entry.content.headers} entries={entry.content.entries} name={entry.label}/>
-                                                ) : JSON.stringify(entry)}
-                                            </div>
-                                        ))
-                                    ) : null}
-                                </div>
+                                {result ? (
+                                    result.result.map((entry, index) => (
+                                        <div key={index} className="table-container">
+                                            <h2 className="title is-size-5-mobile is-size-4 mt-4 has-text-weight-normal">{entry.label}</h2>
+                                            {entry.content.type === "table" ? (
+                                                <TableView headers={entry.content.headers} entries={entry.content.entries} name={entry.label}/>
+                                            ) : JSON.stringify(entry)}
+                                        </div>
+                                    ))
+                                ) : null}
                             </div>
                         </div>
                     </div>
