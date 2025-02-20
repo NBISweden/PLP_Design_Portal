@@ -1,5 +1,78 @@
 @import "../../../node_modules/bulma/css/bulma.css";
+@import "@fortawesome/fontawesome-free/css/all.min.css";
 
+:root {
+    /*Custom CSS variables*/
+    --bulma-primary-h: 76deg;
+    --bulma-primary-s: 55%;
+    --bulma-primary-l: 65%;
+    --bulma-link-h: 185deg;
+    --bulma-link-s: 92%;
+    --bulma-link-l: 20%;
+    --bulma-info-h: 186deg;
+    --bulma-info-s: 30%;
+    --bulma-info-l: 73%;
+    --bulma-success-h: 76deg;
+    --bulma-success-s: 55%;
+    --bulma-warning-h: 26deg;
+    --bulma-warning-s: 91%;
+    --bulma-warning-l: 65%;
+    --bulma-danger-h: 17deg;
+    --bulma-danger-s: 91%;
+    --bulma-danger-l: 31%;
+    /*Tables*/
+    --bulma-scheme-main-bis: var(--custom-striped-color) !important;
+    --bulma-table-striped-row-even-background-color: var(--custom-striped-color) !important;
+    /*Text, headings*/
+    --bulma-text: var(--custom-grey-text);
+    --bulma-heading-color: hsl(288, 55%, 30%);
+    --bulma-body-font-size: 1.1rem;
+    --bulma-family-primary: 'Poppins', sans-serif;
+    /*Colors*/
+    --secondary-color: hsl(288deg, 46%, 22%);
+    --secondary-color-hover: hsl(288deg, 50%, 30%);
+    --secondary-color-active: hsl(288deg, 40%, 18%);
+    --custom-striped-color: hsl(185deg, 24%, 80%);
+    --custom-grey-text: hsl(0deg, 0%, 15%);
+    --custom-grey-light: hsl(0, 0%, 97%) ;
+}
+
+h1, h2, .title.is-2 {
+    color: hsl(288, 46%, 22%) !important;
+}
+
+li a {
+    color: var(--bulma-link);
+}
+
+/* Applying more shadows on Buttons */
+.button {
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2); /* Soft shadow for all buttons */
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.button:hover {
+    box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.25);
+}
+
+.button:active {
+    transform: scale(0.98);
+}
+
+/* Secondary Custom Button */
+.button.is-secondary-custom {
+    background-color: var(--secondary-color) !important;
+    color: white !important;
+    border: 1px solid var(--secondary-color-hover);
+}
+
+.button.is-secondary-custom:hover {
+    background-color: var(--secondary-color-hover) !important;
+}
+
+.button.is-secondary-custom:active {
+    background-color: var(--secondary-color-active) !important;
+}
 
 .header {
     flex-grow: 0;
@@ -15,4 +88,8 @@ main {
     width: 100%;
     flex-grow: 0;
     flex-shrink: 0;
+}
+
+.has-background-custom-grey-light {
+    background-color: var(--custom-grey-light) !important;
 }

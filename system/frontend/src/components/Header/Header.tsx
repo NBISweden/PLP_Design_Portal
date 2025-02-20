@@ -2,6 +2,7 @@ import "./Header.css";
 
 export type MenuItem = {
     label: string;
+    icon?: string;
 } & (
     {
         href: string;
@@ -18,12 +19,14 @@ interface Props {
 
 export function Header({title, subtitle, menuItems}: Props) {
     return (
-        <header className="header p-4 p-3-mobile has-background-light">
+        <header
+            className="header p-4 p-3-mobile header-image"
+        >
             <div className="container">
                 <div className="columns is-vcentered is-centered">
 
                     <div className="column is-one-third">
-                        <h1 className="title is-size-3 has-text-grey-dark">{title}</h1>
+                        <h1 className="title is-size-3">{title}</h1>
                         <div className="is-flex is-align-items-center">
                             <p className="subtitle mr-4">{subtitle}</p>
                         </div>
@@ -34,11 +37,12 @@ export function Header({title, subtitle, menuItems}: Props) {
                                 {menuItems.map((item, index) => (
                                     <li key={index} className="ml-4">
                                         {"href" in item ? (
-                                            <a href={item.href} className="is-size-6 has-text-grey-dark">
+                                            <a href={item.href} className="is-size-6 ">
+                                                {item.icon && <i className={`${item.icon} mr-2`} aria-hidden="true"></i>}
                                                 {item.label}
                                             </a>
                                         ) : (
-                                            <a onClick={item.onClick} className="is-size-6 has-text-grey-dark">
+                                            <a onClick={item.onClick} className="is-size-6 ">
                                                 {item.label}
                                             </a>
                                         )}
@@ -47,7 +51,6 @@ export function Header({title, subtitle, menuItems}: Props) {
                             </ul>
                         </nav>
                     </div>
-
                 </div>
             </div>
         </header>

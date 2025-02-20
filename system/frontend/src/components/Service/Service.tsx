@@ -24,7 +24,7 @@ export function Service(_props: {}) {
         navigate(`/results/${resultRef.id}`);
     }
     return (
-        <section className="section">
+        <section className="section has-background-custom-grey-light">
             <div className="container">
                 <h2 className="title is-size-4-mobile has-text-centered">Input</h2>
                 <div className="columns is-centered">
@@ -36,3 +36,4 @@ export function Service(_props: {}) {
         </section>
     )
 }
+
