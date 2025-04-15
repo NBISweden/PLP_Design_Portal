@@ -28,7 +28,7 @@ async function getConfig(path: string) {
     translationUrl?: string,
     fieldsUrl?: string,
   }>(path, {
-    rootUrl: "http://localhost:5000/api/plp_search",
+    rootUrl: "/api/plp_search",
     id: "plp",
     language: "en",
   })
