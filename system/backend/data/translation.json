@@ -5,6 +5,9 @@
                 "title": "Results",
                 "download_file": "Download '{{name}}'"
             },
+            "form": {
+                
+            },
             "service": {
                 "title": "ISS Probe design",
                 "subtitle": "Design padlock probes for in-situ sequencing"
@@ -27,8 +30,7 @@
                 "genome.genome.label": "Select genome"
             },
             "links": {
-                "github": "View on GitHub",
-                "nbis": "Scilifelab NBIS"
+                "github": "View on GitHub"
             }
         }
     }

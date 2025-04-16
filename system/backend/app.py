@@ -79,11 +79,6 @@ def create_app():
                     "id": "github",
                     "href": "https://github.com/NBISweden/PLP_Design_Portal",
                     "icon": "fa-brands fa-github",
-                },
-                {
-                    "id": "nbis",
-                    "href": "https://nbis.se",
-                    "icon": "fa-brands fa-twitter",
                 }
             ],
             "translation": {
