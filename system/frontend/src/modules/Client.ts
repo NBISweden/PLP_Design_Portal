@@ -47,6 +47,19 @@ export type HttpClientConfig = {
     fields?: DataOrReference<FieldDef[]>,
 }
 
+export class HttpQuery<T> implements Query<Result<T>> {
+    private _client: HttpClientAPI<T>;
+    private _values: Record<string, string>;
+    constructor(client: HttpClientAPI<T>, values: Record<string, string>) {
+        this._client = client;
+        this._values = values;
+    }
+
+    get() {
+        return this._client.execute(this._values)
+    }
+}
+
 export class HttpClientAPI<T> implements ClientAPI<T>{
     public readonly id: string;
     private _rootUrl: string;
@@ -61,12 +74,7 @@ export class HttpClientAPI<T> implements ClientAPI<T>{
     }
 
     query(values: Record<string, string>): Query<Result<T>> {
-        const client = this;
-        return {
-            get() {
-                return client._getResults(values)
-            }
-        }
+        return new HttpQuery(this, values);
     }
 
     get translation() {
@@ -81,7 +89,7 @@ export class HttpClientAPI<T> implements ClientAPI<T>{
         return this._links;
     }
 
-    private async _getResults(values: Record<string, string>): Promise<Result<T>> {
+    async execute(values: Record<string, string>): Promise<Result<T>> {
         const url = new URL(this._rootUrl);
         url.search = (new URLSearchParams(values)).toString();
         return await (await fetch(url.toString())).json()
@@ -110,7 +118,7 @@ export class HttpClientAPI<T> implements ClientAPI<T>{
     }
 }
 
-export const ClientContext = React.createContext<ClientAPI<any>>({
+export const ClientContext = React.createContext<ClientAPI<unknown>>({
     id: "none",
     query(values: Record<string, string>) {
         return {

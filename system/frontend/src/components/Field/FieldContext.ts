@@ -55,7 +55,7 @@ export class StaticFieldManager implements FieldManager {
 
 
 export const FieldContext = React.createContext<FieldManager>({
-    getField(id: string, _type?: FieldDef["type"]) {
+    getField(id: string) {
         throw new Error(`Missing field: ${id}`)
     },
     listFields() {

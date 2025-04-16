@@ -12,7 +12,7 @@ export type ResultCache<T> = {
     [id: string]: {result: Result<T>}
 }
 
-export function createCachingResultManager<T>(
+export function useCachingResultManager<T>(
     initialResults: ResultCache<T> = {},
     initialEnumerator: number = 0,
     onChange?: (results: ResultCache<T>, enumerator: number) => void 
@@ -59,11 +59,11 @@ export function createCachingResultManager<T>(
 }
 
 
-export const ResultContext = React.createContext<ResultManager<any>>({
-    addResult(_query: Query<Result<any>>): {id: string} {
+export const ResultContext = React.createContext<ResultManager<unknown>>({
+    addResult(): {id: string} {
         throw new Error("Not implemented");
     },
-    getResult(_ref: {id: string}): {id: string; result: Result<any>} {
+    getResult(): {id: string; result: Result<unknown>} {
         throw new Error("Not implemented");
     },
     results(): {id: string}[] {

@@ -96,11 +96,11 @@ def create_app():
 
     @app.route('/translation.json')
     def translation():
-        return send_file(f"data/translation.json")
+        return send_file("data/translation.json")
 
     @app.route('/fields.json')
     def fields():
-        return send_file(f"data/fields.json")
+        return send_file("data/fields.json")
 
     @app.route('/')
     def index():

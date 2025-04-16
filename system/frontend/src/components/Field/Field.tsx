@@ -1,11 +1,12 @@
 import { InputField, CheckBox, DropDown} from "../Fields"
 import { useField, FieldDef } from "./FieldContext";
 import { useTranslation } from "react-i18next";
+import { getErrorMessage } from "../../modules/utils";
 
 
 export function FieldView(props: {
     fieldDef: FieldDef,
-    widget?: (props: any) => JSX.Element
+    widget?: (props: unknown) => JSX.Element
 }) {
     const {t} = useTranslation();
     const fieldDef = props.fieldDef;
@@ -64,7 +65,7 @@ export function MissingField({id, message}: {id: string, message: string}) {
 
 export function Field(props: {
     id: string,
-    widget?: (props: any) => JSX.Element
+    widget?: (props: unknown) => JSX.Element
 }) {
     const {id, widget} = props;
     try {
@@ -72,8 +73,8 @@ export function Field(props: {
         return (
             <FieldView fieldDef={fieldDef} widget={widget}/>
         )
-    } catch(e: any) {
-        const message = "message" in e ? e.message : "Failed to get field";
+    } catch(e: unknown) {
+        const message = getErrorMessage(e, "Failed to get field");
         return (
             <MissingField id={id} message={message}/>
         );

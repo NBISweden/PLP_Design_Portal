@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useParams } from 'react-router-dom';
 import { useResults } from "../Result/ResultContext";
 
-export function Result(_props: {}) {
+export function Result() {
     const {t} = useTranslation();
     const {resultId} = useParams();
     const results = useResults();
@@ -46,7 +46,7 @@ function tableToTSV(headers: {[id: string]: string}, entries: {[x: string]: stri
 }
 
 
-function downloadData(data: any, mimeType: string, fileName: string) {
+function downloadData(data: string, mimeType: string, fileName: string) {
     const blob = new Blob([data], {type: mimeType});
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");

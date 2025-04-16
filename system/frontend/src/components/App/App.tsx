@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Header, MenuItem } from "../Header/Header";
 import { Service } from "../Service/Service";
 import { Result } from "../Result/Result";
@@ -11,9 +12,10 @@ import "./App.css";
 import {Footer} from "../Footer/Footer";
 
 
-export function App(_props: {}) {
+export function App() {
     const {t} = useTranslation();
     const client = useClient();
+    const title = t("service.title");
     const menuItems: MenuItem[] = client.links.map(link => ({
         label: t(`links.${link.id}`),
         href: link.href,
@@ -29,11 +31,14 @@ export function App(_props: {}) {
             element: <Result />,
         },
     ]);
+    useEffect(() => {
+        document.title = title;
+    }, [title])
 
     return (
         <>
             <Header
-                title={t("service.title")} 
+                title={title} 
                 subtitle={t("service.subtitle")}
                 menuItems={menuItems}/>
             <main>

@@ -1,12 +1,12 @@
-import { StrictMode, useMemo } from 'react'
+import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { App } from "./components/App/App";
 import { initReactI18next } from 'react-i18next';
 import i18next from 'i18next';
 import './index.css'
 import { FieldContext } from "./components/Fields";
+import { Main } from "./components/Main";
 import { ClientContext, HttpClientAPI } from './modules/Client';
-import { ResultContext, ResultCache, createCachingResultManager } from "./components/Result/ResultContext"
+import { getErrorMessage } from "./modules/utils"
 
 
 async function main() {
@@ -27,44 +27,13 @@ async function main() {
         </ClientContext.Provider>
       </StrictMode>,
     );
-  } catch (e: any) {
+  } catch (e: unknown) {
     createRoot(document.getElementById('root')!).render(
-      <div>Failed to load App config: {e.toString()}</div>
+      <div>Failed to load App config: {getErrorMessage(e)}</div>
     );
   }
 }
 
-function Main(props: {resultDataId: string}) {
-  const {resultDataId} = props;
-  const initialData = useMemo<{results: ResultCache<any>, enumerator: number}>(() => {
-    const rawData = localStorage.getItem(resultDataId);
-    return rawData ? JSON.parse(rawData) : {
-      results: {},
-      enumerator: 0
-    }
-  }, [resultDataId]);
-  const onCacheUpdated = useMemo(
-    () => {
-      return (results: ResultCache<any>, enumerator: number) => {
-        const rawData = JSON.stringify({
-          results,
-          enumerator
-        });
-        localStorage.setItem(resultDataId, rawData);
-      }
-    },
-    [resultDataId]
-  );
-  const resultManager = createCachingResultManager<any>(
-    initialData.results,
-    initialData.enumerator,
-    onCacheUpdated,
-  );
-  return (
-    <ResultContext.Provider value={resultManager}>
-      <App />
-    </ResultContext.Provider>
-  )
-}
+
 
 main();

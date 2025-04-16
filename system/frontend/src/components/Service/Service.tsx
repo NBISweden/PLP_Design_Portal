@@ -5,7 +5,7 @@ import { Form } from "../Form/Form";
 import { useResults } from "../Result/ResultContext";
 import { useNavigate } from "react-router-dom";
 
-export function Service(_props: {}) {
+export function Service() {
     const fieldDefs = useFields();
     const client = useClient();
     const results = useResults();
@@ -14,7 +14,7 @@ export function Service(_props: {}) {
         event.preventDefault();
         event.stopPropagation();
         const values = fieldDefs.reduce<{[x: string]: string}>((acc, fd) => {
-            const target = (event.target as any)[fd.id];
+            const target = (event.target as any)[fd.id]; // eslint-disable-line
             const value = target.type === "checkbox" ? !!target.checked : target.value;
             acc[fd.id] = `${value}`;
             return acc;
