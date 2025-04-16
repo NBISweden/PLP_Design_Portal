@@ -1,14 +1,13 @@
-export const translationResources = {
-    en: {
-        translation: {
+{
+    "en": {
+        "translation": {
             "results": {
                 "title": "Results",
                 "download_file": "Download '{{name}}'"
             },
-            "services": {
-                "plp": {
-                    "title": "PLP"
-                }
+            "service": {
+                "title": "ISS Probe design",
+                "subtitle": "Design padlock probes for in-situ sequencing"
             },
             "fields": {
                 "source_sequence.gene_transcript_name_or_fasta.label": "Ensembl gene/transcript name(s) or FASTA sequence",
@@ -25,8 +24,12 @@ export const translationResources = {
                 "anchor_and_spacer.anchor.label": "Anchor",
                 "anchor_and_spacer.spacer_left.label": "Spacer left",
                 "anchor_and_spacer.spacer_right.label": "Spacer right",
-                "genome.genome.label": "Select genome",
+                "genome.genome.label": "Select genome"
+            },
+            "links": {
+                "github": "View on GitHub",
+                "nbis": "Scilifelab NBIS"
             }
         }
     }
-};
+}

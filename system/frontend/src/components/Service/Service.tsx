@@ -6,7 +6,7 @@ import { useResults } from "../Result/ResultContext";
 import { useNavigate } from "react-router-dom";
 
 export function Service(_props: {}) {
-    const fieldDefs = useFields()
+    const fieldDefs = useFields();
     const client = useClient();
     const results = useResults();
     const navigate = useNavigate();

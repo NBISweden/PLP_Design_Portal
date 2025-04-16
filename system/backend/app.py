@@ -71,10 +71,36 @@ def create_app():
     @app.route('/config.json')
     def config():
         return jsonify({
-            "rootUrl": f"{request.host_url}api/plp_search",
+            "rootUrl": "/api/plp_search",
             "id": "plp",
             "language": "en",
+            "links": [
+                {
+                    "id": "github",
+                    "href": "https://github.com/NBISweden/PLP_Design_Portal",
+                    "icon": "fa-brands fa-github",
+                },
+                {
+                    "id": "nbis",
+                    "href": "https://nbis.se",
+                    "icon": "fa-brands fa-twitter",
+                }
+            ],
+            "translation": {
+                "url": "/translation.json"
+            },
+            "fields": {
+                "url": "/fields.json"
+            }
         })
+
+    @app.route('/translation.json')
+    def translation():
+        return send_file(f"data/translation.json")
+
+    @app.route('/fields.json')
+    def fields():
+        return send_file(f"data/fields.json")
 
     @app.route('/')
     def index():

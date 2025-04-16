@@ -1,4 +1,6 @@
 import React from "react";
+import { FieldDef, FieldManager, StaticFieldManager } from "../components/Fields"
+import { DataOrReference, fetchReference } from "./utils"
 
 export type Description = {
     label: string;
@@ -19,11 +21,39 @@ export type Result<T> = Entry<T>[];
 export interface ClientAPI<T> {
     id: string;
     query(values: Record<string, string>): Query<Result<T>>;
+    translation: TranslationResource;
+    fields: FieldManager;
+    links: Link[]
+}
+
+type Link = {
+    id: string;
+    href: string;
+    icon: string;
+}
+
+type Translation = {
+    [x: string]: string | Translation
+}
+
+type TranslationResource = {[lang: string]: {translation: Translation}}
+
+export type HttpClientConfig = {
+    rootUrl: string,
+    id: string,
+    language: string,
+    links?: Link[],
+    translation?: DataOrReference<TranslationResource>,
+    fields?: DataOrReference<FieldDef[]>,
 }
 
 export class HttpClientAPI<T> implements ClientAPI<T>{
-    public id: string;
+    public readonly id: string;
     private _rootUrl: string;
+    private _translation: TranslationResource = {};
+    private _fields: FieldManager = new StaticFieldManager([]);
+    private _links: Link[] = [];
+
 
     constructor(id: string, rootUrl: string) {
         this.id = id;
@@ -39,10 +69,44 @@ export class HttpClientAPI<T> implements ClientAPI<T>{
         }
     }
 
+    get translation() {
+        return this._translation;
+    }
+
+    get fields() {
+        return this._fields;
+    }
+
+    get links() {
+        return this._links;
+    }
+
     private async _getResults(values: Record<string, string>): Promise<Result<T>> {
         const url = new URL(this._rootUrl);
         url.search = (new URLSearchParams(values)).toString();
         return await (await fetch(url.toString())).json()
+    }
+
+    static async fromConfig<T>(config: HttpClientConfig): Promise<HttpClientAPI<T>> {
+        const client = new HttpClientAPI<T>(config.id, config.rootUrl);
+        const translationRef = config.translation;
+        const fieldsRef = config.fields;
+
+        const [translation, fields] = await Promise.all([
+            translationRef !== undefined ? fetchReference(translationRef) : Promise.resolve(undefined),
+            fieldsRef !== undefined ? fetchReference(fieldsRef) : Promise.resolve(undefined),
+        ])
+
+        if (translation) {
+            client._translation = translation;
+        }
+        if (fields) {
+            client._fields = new StaticFieldManager(fields);
+        }
+        if (config.links) {
+            client._links = config.links;
+        }
+        return client;
     }
 }
 
@@ -56,6 +120,10 @@ export const ClientContext = React.createContext<ClientAPI<any>>({
             }
         }
     },
+    translation: {},
+    fields: new StaticFieldManager([]),
+    links: [],
+
 });
 
 export function useClient() {
