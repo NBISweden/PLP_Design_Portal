@@ -11,7 +11,7 @@ import { getErrorMessage } from "./modules/utils"
 
 async function main() {
   try {
-    const config = await (await fetch("config.json")).json();
+    const config = await (await fetch("/config.json")).json();
     const clientAPI = await HttpClientAPI.fromConfig<BasicContent>(config);
     i18next.use(initReactI18next).init({
       lng: config.language || "en",
