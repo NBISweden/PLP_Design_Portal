@@ -90,7 +90,7 @@ export class HttpClientAPI<T> implements ClientAPI<T>{
     }
 
     async execute(values: Record<string, string>): Promise<Result<T>> {
-        const url = new URL(this._rootUrl);
+        const url = new URL(this._rootUrl, window.location.href);
         url.search = (new URLSearchParams(values)).toString();
         return await (await fetch(url.toString())).json()
     }
@@ -118,7 +118,19 @@ export class HttpClientAPI<T> implements ClientAPI<T>{
     }
 }
 
-export const ClientContext = React.createContext<ClientAPI<unknown>>({
+export type TableContent = {
+    type: "table",
+    headers: {[id: string]: string},
+    entries: {[x: string]: string}[]
+}
+
+export type ErrorContent = {
+    type: "error";
+}
+
+export type BasicContent = TableContent | ErrorContent
+
+export const ClientContext = React.createContext<ClientAPI<BasicContent>>({
     id: "none",
     query(values: Record<string, string>) {
         return {

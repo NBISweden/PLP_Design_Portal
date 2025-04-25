@@ -5,14 +5,14 @@ import i18next from 'i18next';
 import './index.css'
 import { FieldContext } from "./components/Fields";
 import { Main } from "./components/Main";
-import { ClientContext, HttpClientAPI } from './modules/Client';
+import { ClientContext, HttpClientAPI, BasicContent } from './modules/Client';
 import { getErrorMessage } from "./modules/utils"
 
 
 async function main() {
   try {
     const config = await (await fetch("config.json")).json();
-    const clientAPI = await HttpClientAPI.fromConfig(config);
+    const clientAPI = await HttpClientAPI.fromConfig<BasicContent>(config);
     i18next.use(initReactI18next).init({
       lng: config.language || "en",
       resources: clientAPI.translation,

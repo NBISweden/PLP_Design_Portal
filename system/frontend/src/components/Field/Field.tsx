@@ -3,10 +3,22 @@ import { useField, FieldDef } from "./FieldContext";
 import { useTranslation } from "react-i18next";
 import { getErrorMessage } from "../../modules/utils";
 
+type WidgetProps = {
+    label: string,
+    type: string,
+    name: string,
+    placeholder: string,
+    required: boolean,
+    default?: unknown,
+    options?: {
+        value: unknown,
+        label: string
+    }[]
+}
 
 export function FieldView(props: {
     fieldDef: FieldDef,
-    widget?: (props: unknown) => JSX.Element
+    widget?: (props: WidgetProps) => JSX.Element
 }) {
     const {t} = useTranslation();
     const fieldDef = props.fieldDef;
@@ -65,7 +77,7 @@ export function MissingField({id, message}: {id: string, message: string}) {
 
 export function Field(props: {
     id: string,
-    widget?: (props: unknown) => JSX.Element
+    widget?: (props: WidgetProps) => JSX.Element
 }) {
     const {id, widget} = props;
     try {

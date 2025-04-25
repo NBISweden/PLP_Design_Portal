@@ -1,10 +1,11 @@
 import { useMemo } from 'react'
 import { App } from "./App/App";
 import { ResultContext, ResultCache, useCachingResultManager } from "./Result/ResultContext"
+import { BasicContent } from '../modules/Client';
 
 export function Main(props: {resultDataId: string}) {
     const {resultDataId} = props;
-    const initialData = useMemo<{results: ResultCache<unknown>, enumerator: number}>(() => {
+    const initialData = useMemo<{results: ResultCache<BasicContent>, enumerator: number}>(() => {
       const rawData = localStorage.getItem(resultDataId);
       return rawData ? JSON.parse(rawData) : {
         results: {},
@@ -13,7 +14,7 @@ export function Main(props: {resultDataId: string}) {
     }, [resultDataId]);
     const onCacheUpdated = useMemo(
       () => {
-        return (results: ResultCache<unknown>, enumerator: number) => {
+        return (results: ResultCache<BasicContent>, enumerator: number) => {
           const rawData = JSON.stringify({
             results,
             enumerator
@@ -23,7 +24,7 @@ export function Main(props: {resultDataId: string}) {
       },
       [resultDataId]
     );
-    const resultManager = useCachingResultManager<unknown>(
+    const resultManager = useCachingResultManager<BasicContent>(
       initialData.results,
       initialData.enumerator,
       onCacheUpdated,
