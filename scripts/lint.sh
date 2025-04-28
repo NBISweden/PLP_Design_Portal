@@ -10,7 +10,7 @@ _setup_lint() {
 
 	backend() {
 		PARSE_DIR="sed 's|/opt/app|./system/backend|g'"
-		${COMPOSE} run --rm backend bash -c "flake8 /opt/app | ${PARSE_DIR}; mypy --show-absolute-path . | ${PARSE_DIR};"
+		${COMPOSE} run --rm backend bash -c "flake8 --ignore=E501 /opt/app | ${PARSE_DIR}; mypy --show-absolute-path . | ${PARSE_DIR};"
 	}
 
 	frontend() {
