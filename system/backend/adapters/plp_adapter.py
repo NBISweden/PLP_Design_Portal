@@ -1,4 +1,9 @@
+from typing import Literal
 from .result_data import Result, TableData
+from plp_directrna_design import probedesign as plp
+
+
+IdentifierType = Literal["gene_id", "gene_name"]
 
 
 name = "plp_search"
@@ -186,3 +191,101 @@ def service(data):
             ]
         )
     )
+
+
+def extract_features(
+    gtf_file: str,
+    genes_str: str,
+    identifier_type: IdentifierType,
+    gene_feature: str = "CDS"
+):
+    # Parse the GTF file and filter by gene list
+    gtf_df, genes_of_interest = plp.parse_gtf(gtf_file, genes_str, identifier_type, gene_feature)
+
+    # Merge regions and calculate coverage
+    merged_cov_df = plp.merge_regions_and_coverage(genes_of_interest, gtf_df)
+
+    return merged_cov_df
+
+
+def extract_mrna(
+    fasta_file: str,
+    gtf_file: str,
+):
+    return plp.extract_mrna_sequences(
+        fasta_file=fasta_file,
+        gtf_file=gtf_file,
+        plus_strand_only=False,
+        revcomp=False,
+        translate=False,
+        codon_table=1,
+        alternative_start_codon=True,
+        clean_final_stop=True,
+        clean_internal_stop=False,
+        verbose=False
+    )
+
+
+def extract_sequences(
+    gtf_output: str,
+    fasta_file: str,
+    output_fasta: str,
+    plp_length: int,
+    identifier_type: IdentifierType
+):
+    df = pd.read_csv(gtf_output, sep='\t')
+
+    # Ensure FASTA index exists
+    plp.check_fasta_index(fasta_file)
+
+    # Save regions for fast retrieval
+    regions_file = "regions"
+    plp.save_regions_for_faidx(df, regions_file, plp_length, identifier_type=identifier_type)
+
+    # Extract sequences
+    plp.extract_sequences(fasta_file, regions_file + ".txt", output_fasta, df)
+
+
+def find_target(
+    selected_features,
+    fasta_file,
+    output_file,
+    reference_fasta,
+    min_coverage, 
+    gc_min=50,
+    gc_max=65,
+    num_probes=10,
+    iupac_mismatches=None,
+    max_errors = 1, 
+    check_specificity = False,
+    plp_length=30,
+    Tm_min=55,
+    Tm_max=65, 
+    lowest_percentile_Tm_score_cutoff=5,
+    min_dist_probes=10,
+    filter_ligation_junction=True
+):
+
+    print(f"🔹 Loading selected features from {selected_features}...")
+
+    targets_df = plp.find_targets(selected_features = selected_features, fasta_file = fasta_file, reference_fasta = reference_fasta,
+                                 plp_length = plp_length, min_coverage = min_coverage, output_file=output_file, 
+                                 gc_min=gc_min, gc_max=gc_max, num_probes=num_probes, iupac_mismatches=iupac_mismatches,
+                                 max_errors=max_errors, check_specificity=check_specificity)
+    # Calculate the melting temperature scores
+    sequences = targets_df['Sequence']
+    scores = [plp.score_padlock_probe(seq, Tm_min = Tm_min, Tm_max= Tm_max) for seq in sequences]
+    targets_df['Melt_Tm_scores'] = scores
+    # Calculate the suggested cutoff based on the 5th percentile
+    suggested_cutoff = plp.analyze_scores(scores, percentile=lowest_percentile_Tm_score_cutoff)
+    # Filter the targets based on the suggested cutoff
+    targets_df = targets_df[targets_df['Melt_Tm_scores'] <= suggested_cutoff]
+    # Filteer the probes based on the minimum distance between probes
+    targets_df = plp.filter_probes_by_distance(targets_df, min_dist_probes=min_dist_probes)
+    # filter the probes based on the ligation junction preferences
+    if filter_ligation_junction:
+        targets_df = targets_df[targets_df['Ligation junction'] != 'non-preferred']
+
+    targets_df = plp.select_top_probes(targets_df, num_probes)
+    # Save the output    
+    targets_df.to_csv(output_file, sep='\t', index=False)
