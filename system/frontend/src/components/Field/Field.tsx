@@ -3,7 +3,7 @@ import { useField, FieldDef } from "./FieldContext";
 import { useTranslation } from "react-i18next";
 import { getErrorMessage } from "../../modules/utils";
 
-type WidgetProps = {
+export type WidgetProps = {
     label: string,
     type: string,
     name: string,

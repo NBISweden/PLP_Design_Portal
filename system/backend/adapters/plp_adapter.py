@@ -139,7 +139,17 @@ translation = {
                 "title": "Results",
                 "download_file": "Download '{{name}}'"
             },
-            "form": {},
+            "form": {
+                "groups": {
+                    "source_sequence": "Source sequences for target design",
+                    "probe_design": "Probe design",
+                    "color_code": "Color code",
+                    "anchor_and_spacer": "Anchor and spacer sequences",
+                    "genome": "Genome"
+                },
+                "submit": "Launch analysis",
+                "show_example": "Show example"
+            },
             "service": {
                 "title": "ISS Probe design",
                 "subtitle": "Design padlock probes for in-situ sequencing"
@@ -174,6 +184,107 @@ info = {
     "description": "PLP Search",
     "version": "0.0.1"
 }
+
+
+layout = [
+    {
+        "id": "source_sequence",
+        "fields": [
+            {
+                "type": "field",
+                "id": "source_sequence.gene_transcript_name_or_fasta",
+                "widget": {"type": "textarea", "rows": 5}
+            },
+            [
+                {
+                    "type": "field",
+                    "id": "source_sequence.attribute_identifier"
+                },
+                {
+                    "type": "field",
+                    "id": "source_sequence.feature_identifier"
+                }
+            ],
+            {
+                "type": "field",
+                "id": "source_sequence.fasta_source_sequence_absent"
+            }
+        ]
+    },
+    {
+        "id": "probe_design",
+        "fields": [
+            [
+                {
+                    "type": "field",
+                    "id": "probe_design.probe_arm_length"
+                },
+                {
+                    "type": "field",
+                    "id": "probe_design.min_genome_distance"
+                }
+            ],
+            {
+                "type": "field",
+                "id": "probe_design.use_hamming_distance"
+            },
+            {
+                "type": "field",
+                "id": "probe_design.only_one_unique_arm"
+            },
+            {
+                "type": "field",
+                "id": "probe_design.allow_overlapping_probes"
+            }
+        ]
+    },
+    {
+        "id": "color_code",
+        "fields": [
+            [
+                {
+                    "type": "field",
+                    "id": "color_code.amount_of_colors"
+                },
+                {
+                    "type": "field",
+                    "id": "color_code.length_of_code"
+                }
+            ]
+        ]
+    },
+    {
+        "id": "anchor_and_spacer",
+        "fields": [
+            [
+                {
+                    "type": "field",
+                    "id": "anchor_and_spacer.anchor",
+                    "widget": {"type": "textarea", "rows": 1}
+                },
+                {
+                    "type": "field",
+                    "id": "anchor_and_spacer.spacer_left",
+                    "widget": {"type": "textarea", "rows": 1}
+                },
+                {
+                    "type": "field",
+                    "id": "anchor_and_spacer.spacer_right",
+                    "widget": {"type": "textarea", "rows": 1}
+                }
+            ]
+        ]
+    },
+    {
+        "id": "genome",
+        "fields": [
+            {
+                "type": "field",
+                "id": "genome.genome"
+            }
+        ]
+    }
+]
 
 
 def service(data):

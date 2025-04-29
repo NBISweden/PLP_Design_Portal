@@ -29,7 +29,7 @@ export function Service() {
                 <h2 className="title is-size-4-mobile has-text-centered">Input</h2>
                 <div className="columns is-centered">
                     <div className="column is-two-thirds">
-                        <Form handleSubmit={handleSubmit}/>
+                        <Form handleSubmit={handleSubmit} layout={client.layout}/>
                     </div>
                 </div>
             </div>

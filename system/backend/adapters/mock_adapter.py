@@ -29,7 +29,13 @@ translation = {
                 "title": "Results",
                 "download_file": "Download '{{name}}'"
             },
-            "form": {},
+            "form": {
+                "groups": {
+                    "group_a": "Group A",
+                },
+                "submit": "Engage",
+                "show_example": "Show example"
+            },
             "service": {
                 "title": "Mock service",
                 "subtitle": "Hello world!"
@@ -43,6 +49,16 @@ translation = {
         }
     }
 }
+
+
+layout = [
+    {
+        "id": "group_a",
+        "fields": [
+            {"type": "field", "id": "hello.world"}
+        ]
+    }
+]
 
 
 info = {
