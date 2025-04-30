@@ -8,10 +8,10 @@ import os
 import logging
 from flask_compress import Compress  # type: ignore
 from dataclasses import asdict
-from adapters import plp_adapter
+from adapters.plp_adapter import adapter
 
 
-current_adapter = plp_adapter
+current_adapter = adapter
 
 
 def parse_query(args: dict[str, str]):
@@ -40,11 +40,9 @@ def create_app():
     @app.route(f'/api/{current_adapter.name}')
     def service():
         data = parse_query(request.args)
-        result = current_adapter.service(data)
+        result = current_adapter.run(data)
 
-        return jsonify([
-            asdict(result)
-        ])
+        return jsonify([asdict(r) for r in result])
 
     @app.route('/config.json')
     def config():

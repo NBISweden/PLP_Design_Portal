@@ -1,4 +1,3 @@
-
 from dataclasses import dataclass
 
 
@@ -10,7 +9,13 @@ class TableData:
 
 
 @dataclass
+class FileData:
+    base64_data: str
+    type: str = "data"
+
+
+@dataclass
 class Result:
     id: str
     label: str
-    content: TableData
+    content: TableData | FileData
