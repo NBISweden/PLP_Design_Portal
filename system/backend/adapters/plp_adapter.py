@@ -2,6 +2,11 @@ from dataclasses import dataclass
 from typing import Literal
 from .result_data import Result, ErrorResult, Error, FieldError, TableData
 from plp_directrna_design import probedesign as plp
+import os
+import json
+
+
+GENOME_LIST_PATH = os.getenv("PLP_GENOME_LIST_PATH", "genome_list.json")
 
 
 @dataclass
@@ -33,6 +38,9 @@ class GenomeDataSet:
 
 class PLPAdapter:
     name = "plp_search"
+
+    def __init__(self, genome_list_path: str):
+        self._genome_list_path = genome_list_path
 
     @property
     def info(self):
@@ -212,14 +220,21 @@ class PLPAdapter:
         pass
 
     def _get_genome_list(self) -> list[GenomeDataSet]:
-        return [
-            GenomeDataSet(
-                id="mus",
-                version="0.0.1",
-                fa_path="test-data/plp/Mus.fa",
-                gtf_path="test-data/plp/tmp.gtf"
-            )
-        ]
+        genome_list = self._load_genome_list()
+        return genome_list
+
+    def _load_genome_list(self):
+        try:
+            with open(self._genome_list_path) as f:
+                data_list = json.load(f)
+                return [
+                    GenomeDataSet(**entry)
+                    for entry in data_list
+                ]
+        except FileNotFoundError:
+            return []
 
 
-adapter = PLPAdapter()
+adapter = PLPAdapter(
+    genome_list_path=GENOME_LIST_PATH
+)
