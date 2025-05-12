@@ -26,7 +26,6 @@ export function FieldView(props: {
     const widget = props.widget;
     const label = t(`fields.${fieldDef.id}.label`);
     const name = fieldDef.id;
-    const defaultValue = fieldDef.default;
     const options = (
         fieldDef.type == "choice"
         ? fieldDef.options.map(o => ({
@@ -43,6 +42,7 @@ export function FieldView(props: {
     const required = fieldDef.required === undefined ? false : fieldDef.required;
 
     if (widget !== undefined) {
+        const defaultValue = fieldDef.default;
         return widget({label, type: fieldDef.type, name, default: defaultValue, options, placeholder, required})
     } else {
         switch (fieldDef.type) {
@@ -50,13 +50,16 @@ export function FieldView(props: {
                 return <DropDown label={label} name={name} options={options} required={required}/>
             }
             case "number": {
-                return <InputField type="number" name={name} label={label} placeholder={placeholder} required={required}/>
+                const defaultValue = fieldDef.default;
+                return <InputField type="number" name={name} defaultValue={defaultValue} label={label} placeholder={placeholder} required={required}/>
             }
             case "text": {
-                return <InputField type="text" name={name} label={label} placeholder={fieldDef.placeholder} required={required}/>
+                const defaultValue = fieldDef.default;
+                return <InputField type="text" name={name} defaultValue={defaultValue} label={label} placeholder={fieldDef.placeholder} required={required}/>
             }
             case "yesno": {
-                return <CheckBox name={name} label={label} required={required}/>
+                const defaultValue = fieldDef.default;
+                return <CheckBox name={name} label={label} defaultValue={defaultValue} required={required}/>
             }
         }
     }
