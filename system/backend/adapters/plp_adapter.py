@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Literal
-from .result_data import Result, TableData
+from .result_data import Result, ErrorResult, Error, FieldError, TableData
 from plp_directrna_design import probedesign as plp
 
 
@@ -190,7 +190,7 @@ class PLPAdapter:
             }
         ]
 
-    def run(self, data) -> list[Result]:
+    def run(self, data) -> list[Result] | ErrorResult:
         return [
             Result(
                 id="plp-search",

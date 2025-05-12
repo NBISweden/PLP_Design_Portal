@@ -1,5 +1,6 @@
 import React from "react";
 import { FieldDef, FieldManager, StaticFieldManager } from "../components/Fields"
+import { Error } from "./ErrorContext"
 import { FormLayout } from "../components/Form/Form"
 import { DataOrReference, fetchReference } from "./utils"
 
@@ -19,9 +20,15 @@ export interface Query<T> {
 
 export type Result<T> = Entry<T>[];
 
+export type FieldError = {
+    fieldId: string;
+} & Error;
+
+export type ErrorResult = {errors: (Error | FieldError)[]};
+
 export interface ClientAPI<T> {
     id: string;
-    query(values: Record<string, string>): Query<Result<T>>;
+    query(values: Record<string, string>): Query<Result<T> | ErrorResult>;
     translation: TranslationResource;
     fields: FieldManager;
     layout: FormLayout;

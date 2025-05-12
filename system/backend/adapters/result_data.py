@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
@@ -19,3 +20,21 @@ class Result:
     id: str
     label: str
     content: TableData | FileData
+
+
+@dataclass
+class Error:
+    id: str
+    description: Optional[str]
+
+
+@dataclass
+class FieldError:
+    fieldId: str
+    id: str
+    description: Optional[str]
+
+
+@dataclass
+class ErrorResult:
+    errors: list[Error | FieldError]

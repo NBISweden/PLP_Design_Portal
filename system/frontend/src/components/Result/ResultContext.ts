@@ -1,9 +1,9 @@
 import React from "react";
-import { Query, Result, BasicContent, ErrorContent } from "../../modules/Client"
+import { Result, BasicContent, ErrorContent } from "../../modules/Client"
 
 
 interface ResultManager<T> {
-    addResult(query: Query<Result<T>>, namespace?: string): {id: string};
+    addResult(result: Result<T | ErrorContent>, namespace?: string): {id: string};
     getResult(ref: {id: string}): {id: string; result: Result<T>};
     results(): {id: string}[];
 }
@@ -27,38 +27,15 @@ export function useCachingResultManager<T>(
     }, [onChange, results, enumerator])
 
     return {
-        addResult(query: Query<Result<T | ErrorContent>>, namespace: string ="result"): {id: string} {
+        addResult(result: Result<T | ErrorContent>, namespace: string ="result"): {id: string} {
             setEnumerator(enumerator + 1)
             const id: string = `${namespace}-${enumerator}`
             setResults((r) => ({
                 ...r,
                 [id]: {
-                    result: []
+                    result: result
                 }
             }));
-            query.get().then((result) => {
-                setResults((r) => ({
-                    ...r,
-                    [id]: {
-                        result: result
-                    }
-                }));
-            }).catch((e) => {
-                const errorResult: Result<ErrorContent> = [
-                    {
-                        id: `error-${id}`,
-                        label: "Error",
-                        description: e.toString(),
-                        content: {type: "error"},
-                    }
-                ]
-                setResults((r) => ({
-                    ...r,
-                    [id]: {
-                        result: errorResult
-                    }
-                }));
-            });
             return {id};
         },
         getResult(ref: {id: string}): {id: string; result: Result<T | ErrorContent>} {

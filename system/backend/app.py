@@ -42,7 +42,11 @@ def create_app():
         data = parse_query(request.args)
         result = current_adapter.run(data)
 
-        return jsonify([asdict(r) for r in result])
+        return (
+            jsonify([asdict(r) for r in result])
+            if isinstance(result, list)
+            else jsonify(asdict(result))
+        )
 
     @app.route('/config.json')
     def config():
