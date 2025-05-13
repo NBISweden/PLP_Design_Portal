@@ -239,31 +239,17 @@ class PLPAdapter:
         src_gtf_path = self._abs_genome_path(genome.gtf_path)
         deferred_result_path = self._get_deferred_result_path(result_id)
 
-        if False:
-            p = Process(
-                target=run_prope_design,
-                args=(
-                    run_prope_design,
-                    result_id,
-                    src_fa_path,
-                    src_indexed_fa_path,
-                    src_gtf_path,
-                    deferred_result_path,
-                    config
-                )
-            )
-            p.start()
-        else:
-            self._executor.submit(
-                run_prope_design,
-                run_prope_design,
-                result_id,
-                src_fa_path,
-                src_indexed_fa_path,
-                src_gtf_path,
-                deferred_result_path,
-                config
-            )
+        self._executor.submit(
+            run_prope_design,
+            run_prope_design,
+            result_id,
+            src_fa_path,
+            src_indexed_fa_path,
+            src_gtf_path,
+            deferred_result_path,
+            config
+        )
+
         initial_deferred_result = write_deferred_status(
             deferred_result_path,
             result_id,
