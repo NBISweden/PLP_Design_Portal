@@ -10,6 +10,7 @@ import tempfile
 import logging
 import contextlib
 import uuid
+from datetime import datetime
 
 
 GENOME_LIST_PATH = os.getenv("PLP_GENOME_LIST_PATH", "genome_list.json")
@@ -366,6 +367,9 @@ def write_deferred_status(deferred_result_path: str, result_id: str, status: Def
         return current_result
 
 
+def current_time():
+    return datetime.now().timestamp()
+
 def run_prope_design(
     self,
     result_id: str, 
@@ -375,6 +379,7 @@ def run_prope_design(
     deferred_result_path: str,
     config: Config
 ):
+    start_time = current_time()
     with tempfile.TemporaryDirectory(prefix="plp-workdir") as workdir:
         write_deferred_status(
             deferred_result_path,
@@ -445,7 +450,7 @@ def run_prope_design(
             result_id,
             DeferredStatus(
                 progress=10,
-                description="extracted_features"
+                description=f"extracted_features: {current_time() - start_time}"
             )
         )
 
@@ -459,7 +464,7 @@ def run_prope_design(
             result_id,
             DeferredStatus(
                 progress=20,
-                description="extract_mrna"
+                description=f"extract_mrna: {current_time() - start_time}"
             )
         )
 
@@ -476,7 +481,7 @@ def run_prope_design(
             result_id,
             DeferredStatus(
                 progress=40,
-                description="extract_sequences"
+                description=f"extract_sequences: {current_time() - start_time}"
             )
         )
 
@@ -502,7 +507,7 @@ def run_prope_design(
             result_id,
             DeferredStatus(
                 progress=100,
-                description="find_target"
+                description=f"find_target: {current_time() - start_time}"
             )
         )
 
