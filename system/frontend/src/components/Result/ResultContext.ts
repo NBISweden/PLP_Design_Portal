@@ -68,11 +68,12 @@ export function useCachingResultManager<T extends object>(
                 const timerRef = timerRefs.current[ref.id]
                 if (typeof(timerRef) === "number") {
                     clearTimeout(timerRef);
-                    timerRefs.current[ref.id] = null
                 }
-                if (timerRef !== "updating") {
-                    setTimeout(updateResults, 5000)
-                }
+                timerRefs.current[ref.id] = (
+                    timerRef === "updating"
+                    ? null
+                    : setTimeout(updateResults, 5000)
+                );
             }
             return {
                 id: ref.id,
