@@ -2,8 +2,8 @@ from dataclasses import dataclass, asdict
 from typing import Literal
 from .result_data import Result, ErrorResult, Error, FieldError, TableData, DeferredResult, DeferredStatus
 from plp_directrna_design import probedesign as plp
-from multiprocessing import Process
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from multiprocessing import Lock
+from concurrent.futures import ProcessPoolExecutor
 import os
 import json
 import tempfile
@@ -11,6 +11,7 @@ import logging
 import contextlib
 import uuid
 from datetime import datetime
+import functools
 
 
 GENOME_LIST_PATH = os.getenv("PLP_GENOME_LIST_PATH", "genome_list.json")
@@ -65,13 +66,18 @@ class GenomeDataSet:
     gtf_path: str
 
 
+@functools.cache
+def get_id_lock(id: str):
+    return Lock()
+
+
 class PLPAdapter:
     name = "plp_search"
 
     def __init__(self, genome_list_path: str, deferred_result_path: str):
         self._genome_list_path = genome_list_path
         self._deferred_result_path = deferred_result_path
-        self._executor = ThreadPoolExecutor(max_workers=4)
+        self._executor = ProcessPoolExecutor(max_workers=4)
 
     @property
     def info(self):
@@ -283,9 +289,10 @@ class PLPAdapter:
         ]
 
     def get_deferred_result(self, result_id: str):
-        with open(self._get_deferred_result_path(result_id), "r") as f:
-            data = json.load(f)
-            return DeferredResult.from_data(data)
+        with get_id_lock(result_id):
+            with open(self._get_deferred_result_path(result_id), "r") as f:
+                data = json.load(f)
+                return DeferredResult.from_data(data)
 
     def _abs_genome_path(self, path: str):
         genome_root = os.path.dirname(self._genome_list_path)
@@ -348,6 +355,7 @@ def extract_features(
 
 
 def write_deferred_status(deferred_result_path: str, result_id: str, status: DeferredStatus):
+    with get_id_lock(result_id):
         current_result = None
         if os.path.isfile(deferred_result_path):
             with open(deferred_result_path, "r") as f:
@@ -369,6 +377,7 @@ def write_deferred_status(deferred_result_path: str, result_id: str, status: Def
 
 def current_time():
     return datetime.now().timestamp()
+
 
 def run_prope_design(
     self,
