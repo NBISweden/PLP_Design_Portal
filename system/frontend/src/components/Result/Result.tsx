@@ -41,7 +41,11 @@ function ResultEntry(props: Entry<BasicContent>) {
         case "table":
             return <TableView headers={props.content.headers} entries={props.content.entries} name={props.label}/>
         case "deferred":
-            return JSON.stringify(props)
+            const entries = props.content.status.map(s => ({
+                "progress": s.progress.toString(),
+                "info": s.description
+            }))
+            return <TableView headers={{"progress": "Progress", "info": "Info"}} entries={entries} name={props.label}/>
         default:
             return JSON.stringify(props)
     }
