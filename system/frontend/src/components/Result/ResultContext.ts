@@ -1,5 +1,5 @@
 import React from "react";
-import { Result, BasicContent, ErrorContent } from "../../modules/Client"
+import { Result, BasicContent, ErrorContent, DeferredResult } from "../../modules/Client"
 
 
 interface ResultManager<T> {
@@ -12,13 +12,14 @@ export type ResultCache<T> = {
     [id: string]: {result: Result<T>}
 }
 
-export function useCachingResultManager<T>(
-    initialResults: ResultCache<T | ErrorContent> = {},
+export function useCachingResultManager<T extends object>(
+    initialResults: ResultCache<T | DeferredResult | ErrorContent> = {},
     initialEnumerator: number = 0,
-    onChange?: (results: ResultCache<T | ErrorContent>, enumerator: number) => void 
+    onChange?: (results: ResultCache<T | DeferredResult | ErrorContent>, enumerator: number) => void 
 ) {
-    const [results, setResults] = React.useState<ResultCache<T | ErrorContent>>(initialResults)
+    const [results, setResults] = React.useState<ResultCache<T | DeferredResult | ErrorContent>>(initialResults)
     const [enumerator, setEnumerator] = React.useState<number>(initialEnumerator);
+    const timerRefs = React.useRef<{[x: string]: number | null | "updating"}>({});
 
     React.useEffect(() => {
         if (onChange) {
@@ -27,7 +28,7 @@ export function useCachingResultManager<T>(
     }, [onChange, results, enumerator])
 
     return {
-        addResult(result: Result<T | ErrorContent>, namespace: string ="result"): {id: string} {
+        addResult(result: Result<T | DeferredResult | ErrorContent>, namespace: string ="result"): {id: string} {
             setEnumerator(enumerator + 1)
             const id: string = `${namespace}-${enumerator}`
             setResults((r) => ({
@@ -38,10 +39,44 @@ export function useCachingResultManager<T>(
             }));
             return {id};
         },
-        getResult(ref: {id: string}): {id: string; result: Result<T | ErrorContent>} {
+        getResult(ref: {id: string}): {id: string; result: Result<T | DeferredResult | ErrorContent>} {
+            const result = results[ref.id]
+            const updateResults = async () => {
+                timerRefs.current[ref.id] = "updating"
+                try {
+                    const updatedResults = await Promise.all(result.result.map(async r => (
+                        "content" in r && "type" in r.content && r.content.type === "deferred" 
+                        ? {
+                            ...r,
+                            content: await fetchJson<T | DeferredResult | ErrorContent>(r.content.url)
+                        }
+                        : Promise.resolve(r)
+                    )))
+                    setResults((r) => ({
+                        ...r,
+                        [ref.id]: {
+                            result: updatedResults
+                        }
+                    }))
+                } catch (e) {
+                    console.log(e)
+                }
+                timerRefs.current[ref.id] = null
+            }
+            const hasDeferred = result.result.some(r => "content" in r && "type" in r.content && r.content.type === "deferred")
+            if (hasDeferred) {
+                const timerRef = timerRefs.current[ref.id]
+                if (typeof(timerRef) === "number") {
+                    clearTimeout(timerRef);
+                    timerRefs.current[ref.id] = null
+                }
+                if (timerRef !== "updating") {
+                    setTimeout(updateResults, 5000)
+                }
+            }
             return {
                 id: ref.id,
-                ...results[ref.id]
+                ...result
             };
         },
         results(): {id: string}[] {
@@ -50,6 +85,9 @@ export function useCachingResultManager<T>(
     }
 }
 
+async function fetchJson<T>(url: string): Promise<T> {
+    return await (await fetch(url)).json()
+}
 
 export const ResultContext = React.createContext<ResultManager<BasicContent>>({
     addResult(): {id: string} {

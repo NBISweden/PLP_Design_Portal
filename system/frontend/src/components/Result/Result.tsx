@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useParams } from 'react-router-dom';
 import { useResults } from "../Result/ResultContext";
+import { BasicContent, Entry } from "../../modules/Client";
 
 export function Result() {
     const {t} = useTranslation();
@@ -15,14 +16,12 @@ export function Result() {
                     <div className="column">
                         <div className="box">
                             <h2 className="title is-size-4-mobile has-text-centered">{t("results.title")}</h2>
-                            <div className="columns is-centered">
+                            <div className="rows is-centered">
                                 {result ? (
                                     result.result.map((entry, index) => (
-                                        <div key={index} className="table-container">
+                                        <div key={index} className="result-container">
                                             <h2 className="title is-size-5-mobile is-size-4 mt-4 has-text-weight-normal">{entry.label}</h2>
-                                            {entry.content.type === "table" ? (
-                                                <TableView headers={entry.content.headers} entries={entry.content.entries} name={entry.label}/>
-                                            ) : JSON.stringify(entry)}
+                                            <ResultEntry {...entry}/>
                                         </div>
                                     ))
                                 ) : null}
@@ -36,6 +35,17 @@ export function Result() {
     );
 }
 
+
+function ResultEntry(props: Entry<BasicContent>) {
+    switch(props.content.type) {
+        case "table":
+            return <TableView headers={props.content.headers} entries={props.content.entries} name={props.label}/>
+        case "deferred":
+            return JSON.stringify(props)
+        default:
+            return JSON.stringify(props)
+    }
+}
 
 function tableToTSV(headers: {[id: string]: string}, entries: {[x: string]: string}[], separator: string = "\t"): string {
     const table = [

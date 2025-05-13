@@ -144,11 +144,20 @@ export type TableContent = {
     entries: {[x: string]: string}[]
 }
 
+export type DeferredResult = {
+    type: "deferred",
+    url: string,
+    status: {
+        progress: number,
+        description: string,
+    }[]
+}
+
 export type ErrorContent = {
     type: "error";
 }
 
-export type BasicContent = TableContent | ErrorContent
+export type BasicContent = TableContent | DeferredResult | ErrorContent
 
 export const ClientContext = React.createContext<ClientAPI<BasicContent>>({
     id: "none",
