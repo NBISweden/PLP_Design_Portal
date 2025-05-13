@@ -10,6 +10,37 @@ class TableData:
 
 
 @dataclass
+class DeferredStatus:
+    progress: int
+    description: str
+
+    @staticmethod
+    def from_data(data: dict):
+        return DeferredStatus(
+            progress=int(data["progress"]),
+            description=str(data["description"])
+        )
+
+
+@dataclass
+class DeferredResult:
+    status: list[DeferredStatus]
+    url: str
+    type: str = "deferred"
+
+    @staticmethod
+    def from_data(data: dict):
+        status = [
+            DeferredStatus.from_data(s)
+            for s in data["status"]
+        ]
+        return DeferredResult(
+            url=str(data["url"]),
+            status=status
+        )
+
+
+@dataclass
 class FileData:
     base64_data: str
     type: str = "data"
@@ -19,7 +50,7 @@ class FileData:
 class Result:
     id: str
     label: str
-    content: TableData | FileData
+    content: TableData | FileData | DeferredResult
 
 
 @dataclass

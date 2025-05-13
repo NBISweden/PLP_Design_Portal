@@ -78,6 +78,10 @@ def create_app():
     def layout():
         return jsonify(current_adapter.layout)
 
+    @app.route('/deferred/<result_id>')
+    def deferred_result(result_id: str):
+        return jsonify(asdict(current_adapter.get_deferred_result(result_id=result_id)))
+
     @app.route('/')
     def index():
         return send_file(f"{app.static_folder}/index.html")

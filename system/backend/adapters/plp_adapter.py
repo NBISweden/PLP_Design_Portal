@@ -1,15 +1,19 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from typing import Literal
-from .result_data import Result, ErrorResult, Error, FieldError, TableData
+from .result_data import Result, ErrorResult, Error, FieldError, TableData, DeferredResult, DeferredStatus
 from plp_directrna_design import probedesign as plp
+from multiprocessing import Process
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import os
 import json
 import tempfile
 import logging
 import contextlib
+import uuid
 
 
 GENOME_LIST_PATH = os.getenv("PLP_GENOME_LIST_PATH", "genome_list.json")
+DEFERRED_RESULT_PATH = os.getenv("PLP_DEFERRED_RESULT_PATH", "/tmp")
 logger = logging.getLogger(__name__)
 
 
@@ -63,8 +67,10 @@ class GenomeDataSet:
 class PLPAdapter:
     name = "plp_search"
 
-    def __init__(self, genome_list_path: str):
+    def __init__(self, genome_list_path: str, deferred_result_path: str):
         self._genome_list_path = genome_list_path
+        self._deferred_result_path = deferred_result_path
+        self._executor = ThreadPoolExecutor(max_workers=4)
 
     @property
     def info(self):
@@ -225,11 +231,52 @@ class PLPAdapter:
 
     def run(self, data) -> list[Result] | ErrorResult:
         config = Config.from_data(data)
-        self.run_prope_design(config)
+        result_id = str(uuid.uuid4())
+
+        genome = self._get_genome_ref(config.genome)
+        src_fa_path = self._abs_genome_path(genome.fa_path)
+        src_indexed_fa_path = f"{src_fa_path}.fai"
+        src_gtf_path = self._abs_genome_path(genome.gtf_path)
+        deferred_result_path = self._get_deferred_result_path(result_id)
+
+        if False:
+            p = Process(
+                target=run_prope_design,
+                args=(
+                    run_prope_design,
+                    result_id,
+                    src_fa_path,
+                    src_indexed_fa_path,
+                    src_gtf_path,
+                    deferred_result_path,
+                    config
+                )
+            )
+            p.start()
+        else:
+            self._executor.submit(
+                run_prope_design,
+                run_prope_design,
+                result_id,
+                src_fa_path,
+                src_indexed_fa_path,
+                src_gtf_path,
+                deferred_result_path,
+                config
+            )
+        initial_deferred_result = write_deferred_status(
+            deferred_result_path,
+            result_id,
+            DeferredStatus(
+                progress=0,
+                description="Waiting for results"
+            )
+        )
+
         return [
             Result(
-                id="plp-search",
-                label="PLP Search",
+                id="plp-parameters",
+                label="PLP Used Parameter",
                 content=TableData(
                     headers={
                         "value": "Value",
@@ -240,77 +287,18 @@ class PLPAdapter:
                         for param, value in data.items()
                     ]
                 )
+            ),
+            Result(
+                id="plp-search",
+                label="PLP Search",
+                content=initial_deferred_result
             )
         ]
 
-    def run_prope_design(self, config: Config) -> list[Result]:
-        with tempfile.TemporaryDirectory(prefix="plp-workdir") as workdir:
-            logger.warning(f"config: {config}")
-            logger.warning(f"workdir: {workdir}")
-            genome = self._get_genome_ref(config.genome)
-
-            src_fa_path = self._abs_genome_path(genome.fa_path)
-            fa_path = os.path.join(workdir, f"{genome.id}.fa")
-            os.symlink(src_fa_path, fa_path)
-            logger.warning(f"fa_path: {src_fa_path}, {fa_path}")
-
-            src_indexed_fa_path = f"{src_fa_path}.fai"
-            if os.path.isfile(src_indexed_fa_path):
-                indexed_fa_path = os.path.join(workdir, f"{genome.id}.fa.fai")
-                os.symlink(src_indexed_fa_path, indexed_fa_path)
-                logger.warning(f"indexed_fa_path: {src_indexed_fa_path}, {indexed_fa_path}")
-
-            src_gtf_path = self._abs_genome_path(genome.gtf_path)
-            gtf_path = os.path.join(workdir, f"{genome.id}.gtf")
-            os.symlink(src_gtf_path, gtf_path)
-            logger.warning(f"gtf_path: {src_gtf_path}, {gtf_path}")
-
-            extracted_features_output_path = os.path.join(workdir, f"extracted_features.txt")
-            transcriptome_output_path = os.path.join(workdir, f"transcriptome.fa")
-            extracted_sequences_fa_output_path = os.path.join(workdir, f"extracted_sequences.fa")
-            regions_output_path = os.path.join(workdir, f"regions")
-            result_output_path = os.path.join(workdir, f"result.csv")
-
-            extracted_features = extract_features(
-                gtf_file=gtf_path,
-                genes_str=config.genes,
-                identifier_type=config.identifier_type,
-                gene_feature=config.gene_feature
-            )
-            extracted_features.to_csv(extracted_features_output_path, sep='\t', index=False)
-
-            extract_mrna(
-                gtf_file=gtf_path,
-                output_file=transcriptome_output_path,
-                fasta_file=fa_path,
-            )
-
-            extract_sequences(
-                extracted_features=extracted_features,
-                fasta_file=fa_path,
-                output_fasta=extracted_sequences_fa_output_path,
-                plp_length=config.plp_length,
-                identifier_type=config.identifier_type,
-                regions_file=regions_output_path
-            )
-
-            find_target(
-                selected_features=extracted_features_output_path,
-                fasta_file=extracted_sequences_fa_output_path,
-                output_file=result_output_path,
-                reference_fasta=extracted_sequences_fa_output_path,
-                num_probes=config.number_of_probes,
-                iupac_mismatches=config.iupac_mismatches,
-                max_errors=config.max_errors, 
-                check_specificity=config.check_probe_specificity,
-                plp_length=config.plp_length,
-                Tm_min=config.tm_min,
-                Tm_max=config.tm_max,
-                lowest_percentile_Tm_score_cutoff=config.lowest_percentile_tm_score_cutoff,
-                min_dist_probes=config.minimum_prope_distance,
-                filter_ligation_junction=config.filter_ligation_junction,
-                off_target_output=config.off_target_output
-            )
+    def get_deferred_result(self, result_id: str):
+        with open(self._get_deferred_result_path(result_id), "r") as f:
+            data = json.load(f)
+            return DeferredResult.from_data(data)
 
     def _abs_genome_path(self, path: str):
         genome_root = os.path.dirname(self._genome_list_path)
@@ -329,6 +317,10 @@ class PLPAdapter:
             for g in genome_list
             if g.id == id
         )
+
+    def _get_deferred_result_path(self, result_id: str) -> str:
+        result_id = str(uuid.UUID(result_id))
+        return os.path.join(self._deferred_result_path, f"{result_id}.json")
 
     def _load_genome_list(self):
         try:
@@ -367,6 +359,166 @@ def extract_features(
     # Merge regions and calculate coverage
     return plp.merge_regions_and_coverage(genes_of_interest, gtf_df)
 
+
+def write_deferred_status(deferred_result_path: str, result_id: str, status: DeferredStatus):
+        current_result = None
+        if os.path.isfile(deferred_result_path):
+            with open(deferred_result_path, "r") as f:
+                data = json.load(f)
+                current_result = DeferredResult.from_data(data)
+        else:
+            current_result = DeferredResult(
+                url=f"/deferred/{result_id}",
+                status=[]
+            )
+
+        current_result.status.append(status)
+
+        with open(deferred_result_path, "w") as f:
+            json.dump(asdict(current_result), f, indent=4)
+
+        return current_result
+
+
+def run_prope_design(
+    self,
+    result_id: str, 
+    src_fa_path: str,
+    src_indexed_fa_path: str,
+    src_gtf_path: str,
+    deferred_result_path: str,
+    config: Config
+):
+    with tempfile.TemporaryDirectory(prefix="plp-workdir") as workdir:
+        write_deferred_status(
+            deferred_result_path,
+            result_id,
+            DeferredStatus(
+                progress=0,
+                description=f"config: {config}"
+            )
+        )
+        write_deferred_status(
+            deferred_result_path,
+            result_id,
+            DeferredStatus(
+                progress=0,
+                description=f"workdir: {workdir}"
+            )
+        )
+
+        fa_path = os.path.join(workdir, f"{os.path.basename(src_fa_path)}")
+        os.symlink(src_fa_path, fa_path)
+        write_deferred_status(
+            deferred_result_path,
+            result_id,
+            DeferredStatus(
+                progress=0,
+                description=f"fa_path: {src_fa_path}, {fa_path}"
+            )
+        )
+
+        if os.path.isfile(src_indexed_fa_path):
+            indexed_fa_path = os.path.join(workdir, f"{os.path.basename(src_indexed_fa_path)}")
+            os.symlink(src_indexed_fa_path, indexed_fa_path)
+            write_deferred_status(
+                deferred_result_path,
+                result_id,
+                DeferredStatus(
+                    progress=0,
+                    description=f"indexed_fa_path: {src_indexed_fa_path}, {indexed_fa_path}"
+                )
+            )
+
+        gtf_path = os.path.join(workdir, f"{os.path.basename(src_gtf_path)}")
+        os.symlink(src_gtf_path, gtf_path)
+        write_deferred_status(
+            deferred_result_path,
+            result_id,
+            DeferredStatus(
+                progress=0,
+                description=f"gtf_path: {src_gtf_path}, {gtf_path}"
+            )
+        )
+
+        extracted_features_output_path = os.path.join(workdir, f"extracted_features.txt")
+        transcriptome_output_path = os.path.join(workdir, f"transcriptome.fa")
+        extracted_sequences_fa_output_path = os.path.join(workdir, f"extracted_sequences.fa")
+        regions_output_path = os.path.join(workdir, f"regions")
+        result_output_path = os.path.join(workdir, f"result.csv")
+
+        extracted_features = extract_features(
+            gtf_file=gtf_path,
+            genes_str=config.genes,
+            identifier_type=config.identifier_type,
+            gene_feature=config.gene_feature
+        )
+        extracted_features.to_csv(extracted_features_output_path, sep='\t', index=False)
+        write_deferred_status(
+            deferred_result_path,
+            result_id,
+            DeferredStatus(
+                progress=10,
+                description="extracted_features"
+            )
+        )
+
+        extract_mrna(
+            gtf_file=gtf_path,
+            output_file=transcriptome_output_path,
+            fasta_file=fa_path,
+        )
+        write_deferred_status(
+            deferred_result_path,
+            result_id,
+            DeferredStatus(
+                progress=20,
+                description="extract_mrna"
+            )
+        )
+
+        extract_sequences(
+            extracted_features=extracted_features,
+            fasta_file=fa_path,
+            output_fasta=extracted_sequences_fa_output_path,
+            plp_length=config.plp_length,
+            identifier_type=config.identifier_type,
+            regions_file=regions_output_path
+        )
+        write_deferred_status(
+            deferred_result_path,
+            result_id,
+            DeferredStatus(
+                progress=40,
+                description="extract_sequences"
+            )
+        )
+
+        find_target(
+            selected_features=extracted_features_output_path,
+            fasta_file=extracted_sequences_fa_output_path,
+            output_file=result_output_path,
+            reference_fasta=extracted_sequences_fa_output_path,
+            num_probes=config.number_of_probes,
+            iupac_mismatches=config.iupac_mismatches,
+            max_errors=config.max_errors, 
+            check_specificity=config.check_probe_specificity,
+            plp_length=config.plp_length,
+            Tm_min=config.tm_min,
+            Tm_max=config.tm_max,
+            lowest_percentile_Tm_score_cutoff=config.lowest_percentile_tm_score_cutoff,
+            min_dist_probes=config.minimum_prope_distance,
+            filter_ligation_junction=config.filter_ligation_junction,
+            off_target_output=config.off_target_output
+        )
+        write_deferred_status(
+            deferred_result_path,
+            result_id,
+            DeferredStatus(
+                progress=100,
+                description="find_target"
+            )
+        )
 
 
 def extract_mrna(
@@ -466,5 +618,6 @@ def find_target(
 
 
 adapter = PLPAdapter(
-    genome_list_path=GENOME_LIST_PATH
+    genome_list_path=GENOME_LIST_PATH,
+    deferred_result_path=DEFERRED_RESULT_PATH,
 )
