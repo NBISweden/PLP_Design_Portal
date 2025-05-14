@@ -2,7 +2,7 @@ ARG FRONTEND_SRC_DIR=/opt/builder
 ARG BACKEND_SRC_DIR=/opt/app
 ARG BACKEND_SERVICE_DIR=/opt/app_service
 ARG BACKEND_SERVICE_NAME=PLP_directRNA_design_V2
-ARG BACKEND_PLP_GENOME_LIST_PATH=/opt/app_service/genome_data/genome_list.json
+ARG BACKEND_PLP_GENOME_LIST_PATH=/home/plp_data/genome_list.json
 ARG UID=1000
 ARG GID=1000
 
