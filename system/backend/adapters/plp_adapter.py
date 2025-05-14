@@ -300,9 +300,12 @@ class PLPAdapter:
 
     def get_deferred_result(self, result_id: str):
         with get_id_lock(result_id):
-            with open(self._get_deferred_result_path(result_id), "r") as f:
-                data = json.load(f)
-                return result_data_from_data(data)
+            try:
+                with open(self._get_deferred_result_path(result_id), "r") as f:
+                    data = json.load(f)
+                    return result_data_from_data(data)
+            except (FileNotFoundError, ValueError):
+                return None
 
     def _abs_genome_path(self, path: str):
         genome_root = os.path.dirname(self._genome_list_path)

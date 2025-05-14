@@ -3,6 +3,7 @@ from flask import (
     jsonify,
     send_file,
     request,
+    abort,
 )
 import os
 import logging
@@ -80,7 +81,11 @@ def create_app():
 
     @app.route('/deferred/<result_id>')
     def deferred_result(result_id: str):
-        return jsonify(asdict(current_adapter.get_deferred_result(result_id=result_id)))
+        deferred_result = current_adapter.get_deferred_result(result_id=result_id)
+        if deferred_result is None:
+            abort(404)
+        else:
+            return jsonify(asdict(deferred_result))
 
     @app.route('/')
     def index():
