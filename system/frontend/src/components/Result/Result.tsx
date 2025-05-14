@@ -1,7 +1,9 @@
+import './Result.css'
 import { useTranslation } from "react-i18next";
 import { useParams } from 'react-router-dom';
 import { useResults } from "../Result/ResultContext";
 import { BasicContent, Entry } from "../../modules/Client";
+
 
 export function Result() {
     const {t} = useTranslation();
@@ -12,25 +14,18 @@ export function Result() {
     return (
         <section className="section has-background-custom-grey-light">
             <div className="container">
-                <div className="columns is-centered">
-                    <div className="column">
-                        <div className="box">
-                            <h2 className="title is-size-4-mobile has-text-centered">{t("results.title")}</h2>
-                            <div className="rows is-centered">
-                                {result ? (
-                                    result.result.map((entry, index) => (
-                                        <div key={index} className="result-container">
-                                            <h2 className="title is-size-5-mobile is-size-4 mt-4 has-text-weight-normal">{entry.label}</h2>
-                                            <ResultEntry {...entry}/>
-                                        </div>
-                                    ))
-                                ) : null}
+                <div className="box">
+                    <h2 className="title is-size-4-mobile has-text-centered">{t("results.title")}</h2>
+                    {result ? (
+                        result.result.map((entry, index) => (
+                            <div key={index} className="result-container">
+                                <h2 className="title is-size-5-mobile is-size-4 mt-4 has-text-weight-normal">{entry.label}</h2>
+                                <ResultEntry {...entry}/>
                             </div>
-                        </div>
-                    </div>
+                        ))
+                    ) : null}
                 </div>
             </div>
-
         </section>
     );
 }
@@ -85,24 +80,26 @@ function TableView(props: {headers: {[id: string]: string}, entries: {[x: string
     return (
         <>
             <button type="submit" onClick={downloadTableTSV} className="button is-secondary-custom">{t("results.download_file", {name: fileName})}</button>
-            <table className="table is-striped">
-                <thead>
-                    <tr>
-                        {Object.entries(headers).map(([id, label]) => (
-                            <th key={id}>{label}</th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody>
-                    {entries.map((entry, index) => (
-                        <tr key={index}>
-                            {Object.keys(headers).map((id) => (
-                                <td key={id}>{entry[id]}</td>
+            <div className="table-container">
+                <table className="table is-striped">
+                    <thead>
+                        <tr>
+                            {Object.entries(headers).map(([id, label]) => (
+                                <th key={id}>{label}</th>
                             ))}
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {entries.map((entry, index) => (
+                            <tr key={index}>
+                                {Object.keys(headers).map((id) => (
+                                    <td key={id}>{entry[id]}</td>
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </>
     )
 }
