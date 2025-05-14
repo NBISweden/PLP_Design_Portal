@@ -2,12 +2,16 @@ ARG FRONTEND_SRC_DIR=/opt/builder
 ARG BACKEND_SRC_DIR=/opt/app
 ARG BACKEND_SERVICE_DIR=/opt/app_service
 ARG BACKEND_SERVICE_NAME=PLP_directRNA_design_V2
+ARG BACKEND_PLP_GENOME_LIST_PATH=/opt/app_service/genome_data/genome_list.json
 ARG UID=1000
 ARG GID=1000
 
 
 ########################################
 FROM ubuntu:24.10 AS service_base
+ARG BACKEND_SERVICE_DIR
+ARG BACKEND_PLP_GENOME_LIST_PATH
+ENV PLP_GENOME_LIST_PATH="$BACKEND_PLP_GENOME_LIST_PATH"
 
 # Set environment variables to prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -55,6 +59,16 @@ RUN wget https://github.com/samtools/samtools/releases/download/1.21/samtools-1.
 COPY system/PLP_directRNA_design_V2/requirements.txt .
 RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
 
+# Copy service code resources
+RUN mkdir -p "$BACKEND_SERVICE_DIR"
+WORKDIR "$BACKEND_SERVICE_DIR"
+COPY --from=system PLP_directRNA_design_V2/codes codes
+COPY --from=system PLP_directRNA_design_V2/PLP_directRNA_design_package PLP_directRNA_design_package
+
+# Copy and install local Python package
+WORKDIR "$BACKEND_SERVICE_DIR/PLP_directRNA_design_package"
+RUN pip3 install --break-system-packages .
+
 
 ########################################
 FROM service_base AS base
@@ -76,22 +90,11 @@ EXPOSE ${APP_PORT:-5000}/tcp
 
 ########################################
 FROM base AS dev
-ARG BACKEND_SERVICE_DIR
 
 COPY --from=system backend/requirements.dev.txt requirements.dev.txt
 
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --break-system-packages -r requirements.dev.txt
-
-# Copy service code resources
-RUN mkdir -p "$BACKEND_SERVICE_DIR"
-WORKDIR "$BACKEND_SERVICE_DIR"
-COPY --from=system PLP_directRNA_design_V2/codes codes
-COPY --from=system PLP_directRNA_design_V2/PLP_directRNA_design_package PLP_directRNA_design_package
-
-# Copy and install local Python package
-WORKDIR "$BACKEND_SERVICE_DIR/PLP_directRNA_design_package"
-RUN pip3 install --break-system-packages .
 
 WORKDIR "$BACKEND_SRC_DIR"
 USER "$GID"
@@ -111,11 +114,12 @@ RUN npm run build
 
 ########################################
 FROM base AS prod
+ARG UID
 ARG FRONTEND_SRC_DIR
 
 COPY --from=system backend/ ./
 RUN chmod +x start-script.sh
 COPY --from=builder "$FRONTEND_SRC_DIR/dist/" static/
 
-USER python
+USER "$UID"
 CMD ./start-script.sh

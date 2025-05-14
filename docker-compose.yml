@@ -21,15 +21,13 @@ services:
     stop_signal: SIGINT
     profiles:
       - dev
-    environment:
-      PLP_GENOME_LIST_PATH: ${BACKEND_SERVICE_DIR:-/opt/app_service}/plp-test/genome_list.json
     ports:
       - 127.0.0.1:${BACKEND_PORT:-5000}:${BACKEND_PORT:-5000}
     volumes:
       - ./system/backend/:${BACKEND_SRC_DIR:-/opt/app}
       #- ./system/PLP_directRNA_design_V2/PLP_directRNA_design_package/:${BACKEND_SERVICE_DIR:-/opt/app_service}/PLP_directRNA_design_package
       #- ./system/PLP_directRNA_design_V2/codes/:${BACKEND_SERVICE_DIR:-/opt/app_service}/codes
-      - ./test-data/plp/:${BACKEND_SERVICE_DIR:-/opt/app_service}/plp-test
+      - ./test-data/plp/:${BACKEND_SERVICE_DIR:-/opt/app_service}/genome_data
       - shared_build:/opt/app/static
     
   app:
@@ -44,6 +42,8 @@ services:
       - prod
     ports:
       - 127.0.0.1:${BACKEND_PORT:-5000}:${BACKEND_PORT:-5000}
+    volumes:
+      - ./test-data/plp/:${BACKEND_SERVICE_DIR:-/opt/app_service}/genome_data
 
 volumes:
   shared_build:
