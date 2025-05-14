@@ -69,3 +69,13 @@ class FieldError:
 @dataclass
 class ErrorResult:
     errors: list[Error | FieldError]
+
+
+def result_data_from_data(data):
+    result_type = data["type"]
+    if result_type == "deferred":
+        return DeferredResult.from_data(data)
+    elif result_type == "table":
+        return TableData(**data)
+    elif result_type == "data":
+        return FileData(**data)

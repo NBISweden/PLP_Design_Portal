@@ -1,6 +1,16 @@
 from dataclasses import dataclass, asdict
 from typing import Literal
-from .result_data import Result, ErrorResult, Error, FieldError, TableData, DeferredResult, DeferredStatus
+from .result_data import (
+    Result,
+    ErrorResult,
+    Error,
+    FieldError,
+    TableData,
+    FileData,
+    DeferredResult,
+    DeferredStatus,
+    result_data_from_data
+)
 from plp_directrna_design import probedesign as plp
 from multiprocessing import Lock
 from concurrent.futures import ProcessPoolExecutor
@@ -292,7 +302,7 @@ class PLPAdapter:
         with get_id_lock(result_id):
             with open(self._get_deferred_result_path(result_id), "r") as f:
                 data = json.load(f)
-                return DeferredResult.from_data(data)
+                return result_data_from_data(data)
 
     def _abs_genome_path(self, path: str):
         genome_root = os.path.dirname(self._genome_list_path)
@@ -375,6 +385,14 @@ def write_deferred_status(deferred_result_path: str, result_id: str, status: Def
         return current_result
 
 
+def write_deferred_result(deferred_result_path: str, result_id: str, result: TableData | FileData | DeferredResult):
+    with get_id_lock(result_id):
+        with open(deferred_result_path, "w") as f:
+            json.dump(asdict(result), f, indent=4)
+
+        return current_result
+
+
 def current_time():
     return datetime.now().timestamp()
 
@@ -391,135 +409,151 @@ def run_prope_design(
     try:
         start_time = current_time()
         with tempfile.TemporaryDirectory(prefix="plp-workdir") as workdir:
-            write_deferred_status(
-                deferred_result_path,
-                result_id,
-                DeferredStatus(
-                    progress=0,
-                    description=f"config: {config}"
-                )
-            )
-            write_deferred_status(
-                deferred_result_path,
-                result_id,
-                DeferredStatus(
-                    progress=0,
-                    description=f"workdir: {workdir}"
-                )
-            )
-
-            fa_path = os.path.join(workdir, f"{os.path.basename(src_fa_path)}")
-            os.symlink(src_fa_path, fa_path)
-            write_deferred_status(
-                deferred_result_path,
-                result_id,
-                DeferredStatus(
-                    progress=0,
-                    description=f"fa_path: {src_fa_path}, {fa_path}"
-                )
-            )
-
-            if os.path.isfile(src_indexed_fa_path):
-                indexed_fa_path = os.path.join(workdir, f"{os.path.basename(src_indexed_fa_path)}")
-                os.symlink(src_indexed_fa_path, indexed_fa_path)
+            with cwd_context(workdir):
                 write_deferred_status(
                     deferred_result_path,
                     result_id,
                     DeferredStatus(
                         progress=0,
-                        description=f"indexed_fa_path: {src_indexed_fa_path}, {indexed_fa_path}"
+                        description=f"config: {config}"
+                    )
+                )
+                write_deferred_status(
+                    deferred_result_path,
+                    result_id,
+                    DeferredStatus(
+                        progress=0,
+                        description=f"workdir: {workdir}"
                     )
                 )
 
-            gtf_path = os.path.join(workdir, f"{os.path.basename(src_gtf_path)}")
-            os.symlink(src_gtf_path, gtf_path)
-            write_deferred_status(
-                deferred_result_path,
-                result_id,
-                DeferredStatus(
-                    progress=0,
-                    description=f"gtf_path: {src_gtf_path}, {gtf_path}"
+                fa_path = os.path.join(workdir, f"{os.path.basename(src_fa_path)}")
+                os.symlink(src_fa_path, fa_path)
+                write_deferred_status(
+                    deferred_result_path,
+                    result_id,
+                    DeferredStatus(
+                        progress=0,
+                        description=f"fa_path: {src_fa_path}, {fa_path}"
+                    )
                 )
-            )
 
-            extracted_features_output_path = os.path.join(workdir, f"extracted_features.txt")
-            transcriptome_output_path = os.path.join(workdir, f"transcriptome.fa")
-            extracted_sequences_fa_output_path = os.path.join(workdir, f"extracted_sequences.fa")
-            regions_output_path = os.path.join(workdir, f"regions")
-            result_output_path = os.path.join(workdir, f"result.csv")
+                if os.path.isfile(src_indexed_fa_path):
+                    indexed_fa_path = os.path.join(workdir, f"{os.path.basename(src_indexed_fa_path)}")
+                    os.symlink(src_indexed_fa_path, indexed_fa_path)
+                    write_deferred_status(
+                        deferred_result_path,
+                        result_id,
+                        DeferredStatus(
+                            progress=0,
+                            description=f"indexed_fa_path: {src_indexed_fa_path}, {indexed_fa_path}"
+                        )
+                    )
 
-            extracted_features = extract_features(
-                gtf_file=gtf_path,
-                genes_str=config.genes,
-                identifier_type=config.identifier_type,
-                gene_feature=config.gene_feature
-            )
-            extracted_features.to_csv(extracted_features_output_path, sep='\t', index=False)
-            write_deferred_status(
-                deferred_result_path,
-                result_id,
-                DeferredStatus(
-                    progress=10,
-                    description=f"extracted_features: {current_time() - start_time}"
+                gtf_path = os.path.join(workdir, f"{os.path.basename(src_gtf_path)}")
+                os.symlink(src_gtf_path, gtf_path)
+                write_deferred_status(
+                    deferred_result_path,
+                    result_id,
+                    DeferredStatus(
+                        progress=0,
+                        description=f"gtf_path: {src_gtf_path}, {gtf_path}"
+                    )
                 )
-            )
 
-            extract_mrna(
-                gtf_file=gtf_path,
-                output_file=transcriptome_output_path,
-                fasta_file=fa_path,
-            )
-            write_deferred_status(
-                deferred_result_path,
-                result_id,
-                DeferredStatus(
-                    progress=20,
-                    description=f"extract_mrna: {current_time() - start_time}"
-                )
-            )
+                extracted_features_output_path = os.path.join(workdir, f"extracted_features.txt")
+                transcriptome_output_path = os.path.join(workdir, f"transcriptome.fa")
+                extracted_sequences_fa_output_path = os.path.join(workdir, f"extracted_sequences.fa")
+                regions_output_path = os.path.join(workdir, f"regions")
+                result_output_path = os.path.join(workdir, f"result.csv")
 
-            extract_sequences(
-                extracted_features=extracted_features,
-                fasta_file=fa_path,
-                output_fasta=extracted_sequences_fa_output_path,
-                plp_length=config.plp_length,
-                identifier_type=config.identifier_type,
-                regions_file=regions_output_path
-            )
-            write_deferred_status(
-                deferred_result_path,
-                result_id,
-                DeferredStatus(
-                    progress=40,
-                    description=f"extract_sequences: {current_time() - start_time}"
+                extracted_features = extract_features(
+                    gtf_file=gtf_path,
+                    genes_str=config.genes,
+                    identifier_type=config.identifier_type,
+                    gene_feature=config.gene_feature
                 )
-            )
+                extracted_features.to_csv(extracted_features_output_path, sep='\t', index=False)
+                write_deferred_status(
+                    deferred_result_path,
+                    result_id,
+                    DeferredStatus(
+                        progress=10,
+                        description=f"extracted_features: {current_time() - start_time}"
+                    )
+                )
 
-            find_target(
-                selected_features=extracted_features_output_path,
-                fasta_file=extracted_sequences_fa_output_path,
-                output_file=result_output_path,
-                reference_fasta=extracted_sequences_fa_output_path,
-                num_probes=config.number_of_probes,
-                iupac_mismatches=config.iupac_mismatches,
-                max_errors=config.max_errors, 
-                check_specificity=config.check_probe_specificity,
-                plp_length=config.plp_length,
-                Tm_min=config.tm_min,
-                Tm_max=config.tm_max,
-                lowest_percentile_Tm_score_cutoff=config.lowest_percentile_tm_score_cutoff,
-                min_dist_probes=config.minimum_prope_distance,
-                filter_ligation_junction=config.filter_ligation_junction,
-                off_target_output=config.off_target_output
-            )
-            write_deferred_status(
-                deferred_result_path,
-                result_id,
-                DeferredStatus(
-                    progress=100,
-                    description=f"find_target: {current_time() - start_time}"
+                extract_mrna(
+                    gtf_file=gtf_path,
+                    output_file=transcriptome_output_path,
+                    fasta_file=fa_path,
                 )
-            )
+                write_deferred_status(
+                    deferred_result_path,
+                    result_id,
+                    DeferredStatus(
+                        progress=20,
+                        description=f"extract_mrna: {current_time() - start_time}"
+                    )
+                )
+
+                extract_sequences(
+                    extracted_features=extracted_features,
+                    fasta_file=fa_path,
+                    output_fasta=extracted_sequences_fa_output_path,
+                    plp_length=config.plp_length,
+                    identifier_type=config.identifier_type,
+                    regions_file=regions_output_path
+                )
+                write_deferred_status(
+                    deferred_result_path,
+                    result_id,
+                    DeferredStatus(
+                        progress=40,
+                        description=f"extract_sequences: {current_time() - start_time}"
+                    )
+                )
+
+                targets_df = find_targets(
+                    selected_features=extracted_features_output_path,
+                    fasta_file=extracted_sequences_fa_output_path,
+                    output_file=result_output_path,
+                    reference_fasta=extracted_sequences_fa_output_path,
+                    num_probes=config.number_of_probes,
+                    iupac_mismatches=config.iupac_mismatches,
+                    max_errors=config.max_errors, 
+                    check_specificity=config.check_probe_specificity,
+                    plp_length=config.plp_length,
+                    Tm_min=config.tm_min,
+                    Tm_max=config.tm_max,
+                    lowest_percentile_Tm_score_cutoff=config.lowest_percentile_tm_score_cutoff,
+                    min_dist_probes=config.minimum_prope_distance,
+                    filter_ligation_junction=config.filter_ligation_junction,
+                    off_target_output=config.off_target_output
+                )
+                write_deferred_status(
+                    deferred_result_path,
+                    result_id,
+                    DeferredStatus(
+                        progress=100,
+                        description=f"find_targets: {current_time() - start_time}"
+                    )
+                )
+
+                headers = {
+                    header: header
+                    for header in targets_df.columns.values
+                }
+                entries = [entry for entry in targets_df.to_dict(orient="records")]
+                write_deferred_result(
+                    deferred_result_path,
+                    result_id,
+                    TableData(
+                        headers=headers,
+                        entries=entries,
+                    )
+                )
+
     except Exception as e:
         write_deferred_status(
             deferred_result_path,
@@ -569,7 +603,7 @@ def extract_sequences(
     plp.extract_sequences(fasta_file, regions_file + ".txt", output_fasta, extracted_features)
 
 
-def find_target(
+def find_targets(
     selected_features,
     fasta_file,
     output_file,
@@ -625,6 +659,7 @@ def find_target(
     targets_df = plp.select_top_probes(targets_df, num_probes)
     # Save the output    
     targets_df.to_csv(output_file, sep='\t', index=False)
+    return targets_df
 
 
 adapter = PLPAdapter(
