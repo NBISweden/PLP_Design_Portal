@@ -3,7 +3,9 @@ from .result_data import (
     ErrorResult,
     Error,
     FieldError,
-    TableData
+    TableData,
+    DeferredResult,
+    DeferredStatus
 )
 import json
 import os
@@ -44,9 +46,26 @@ class MockAdapter:
         "version": "0.0.1"
     }
 
+    def get_deferred_result(self, result_id: str):
+        if result_id == "test-deferred":
+            data = self._last_data
+            return TableData(
+                headers={
+                    "value": "Value",
+                    "param": "Param"
+                },
+                entries=[
+                    {"param": param, "value": value}
+                    for param, value in data.items()
+                ]
+            )
+        else:
+            return None
+
     def run(self, data) -> list[Result] | ErrorResult:
+        self._last_data = data
         field_ids = [field["id"] for field in self._fields]
-        is_error = random.choice([True, False])
+        result_choice = random.choice(["deferred"])
         error_result = ErrorResult(
             errors=[
                 *[
@@ -75,12 +94,29 @@ class MockAdapter:
                 )
             ),
         ]
+        deferred_result = [
+            Result(
+                id="mock-deferred",
+                label="Mock Deferred",
+                content=DeferredResult(
+                    url="/deferred/test-deferred",
+                    status=[
+                        DeferredStatus(
+                            progress=100,
+                            description="Success"
+                        )
+                    ]
+                )
+            )
+        ]
 
-        return (
-            error_result
-            if is_error
-            else success_result
-        )
+        result_selector: dict[str, list[Result] | ErrorResult] = {
+            "error": error_result,
+            "success": success_result,
+            "deferred": deferred_result
+        }
+
+        return result_selector[result_choice]
 
 
 def load_json(path):
