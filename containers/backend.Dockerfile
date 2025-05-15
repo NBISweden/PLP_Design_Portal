@@ -109,7 +109,7 @@ WORKDIR "$FRONTEND_SRC_DIR"
 
 COPY --from=system frontend/ "$FRONTEND_SRC_DIR/"
 
-RUN npm install ci
+RUN npm ci
 RUN npm run build
 
 ########################################
