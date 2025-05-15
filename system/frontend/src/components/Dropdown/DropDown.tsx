@@ -36,7 +36,7 @@ export function DropDown( {options, label, name, range}: Props){
         : options || [];
 
     const [isOpen, setIsOpen] = useState(false);
-    const [selected, setSelected] = useState(dropdownOptions[0].value); // Default to first option
+    const [selected, setSelected] = useState(dropdownOptions[0]?.value); // Default to first option
 
     const handleDropdownSelection = (e: React.MouseEvent<HTMLAnchorElement>, value: string | number) => {
         e.preventDefault();
