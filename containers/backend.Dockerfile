@@ -5,7 +5,7 @@ ARG GID=1000
 
 
 ########################################
-FROM python:3.9-slim AS base
+FROM python:3.12-slim AS base
 ARG BACKEND_SRC_DIR
 ARG UID
 ARG GID

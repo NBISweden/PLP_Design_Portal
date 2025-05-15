@@ -7,33 +7,21 @@ from flask import (
 import os
 import logging
 from flask_compress import Compress  # type: ignore
-from dataclasses import dataclass, asdict
+from dataclasses import asdict
+from adapters.mock_adapter import create_adapter
 
 
-def parse_plp_query(args: dict[str, str]):
+def parse_query(args: dict[str, str]):
     return {
         key: str(value)
         for (key, value) in args.items()
     }
 
 
-@dataclass
-class TableData:
-    headers: dict[str, str]
-    entries: list[dict[str, str]]
-    type: str = "table"
-
-
-@dataclass
-class Result:
-    id: str
-    label: str
-    content: TableData
-
-
 def create_app():
+    adapter = create_adapter()
     logger = logging.getLogger(__name__)
-    logger.info("Creating app")
+    logger.info(f"Creating app: {adapter.name}")
 
     app = Flask(
         __name__,
@@ -45,57 +33,41 @@ def create_app():
 
     @app.route('/api')
     def root():
-        return jsonify({"message": "Hello from PLP Design Portal!"})
+        return jsonify(adapter.info)
 
-    @app.route('/api/plp_search')
-    def plp_search():
-        data = parse_plp_query(request.args)
-        result = Result(
-            id="plp-search",
-            label="PLP Search",
-            content=TableData(
-                headers={
-                    "value": "Value",
-                    "param": "Param"
-                },
-                entries=[
-                    {"param": param, "value": value}
-                    for param, value in data.items()
-                ]
-            )
+    @app.route(f'/api/{adapter.name}')
+    def service():
+        data = parse_query(request.args)
+        result = adapter.run(data)
+
+        return (
+            jsonify([asdict(r) for r in result])
+            if isinstance(result, list)
+            else jsonify(asdict(result))
         )
-        return jsonify([
-            asdict(result)
-        ])
 
     @app.route('/config.json')
     def config():
         return jsonify({
-            "rootUrl": "/api/plp_search",
+            "rootUrl": f"/api/{adapter.name}",
             "id": "plp",
             "language": "en",
-            "links": [
-                {
-                    "id": "github",
-                    "href": "https://github.com/NBISweden/PLP_Design_Portal",
-                    "icon": "fa-brands fa-github",
-                }
-            ],
+            "links": adapter.links,
             "translation": {
                 "url": "/translation.json"
             },
             "fields": {
                 "url": "/fields.json"
-            }
+            },
         })
 
     @app.route('/translation.json')
     def translation():
-        return send_file("data/translation.json")
+        return jsonify(adapter.translation)
 
     @app.route('/fields.json')
     def fields():
-        return send_file("data/fields.json")
+        return jsonify(adapter.fields)
 
     @app.route('/')
     def index():
