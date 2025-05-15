@@ -1,16 +1,20 @@
-import { FormEventHandler } from "react";
+import { FormEventHandler, useState } from "react";
 import { useFields } from "../Fields";
-import { useClient } from "../../modules/Client";
+import { useClient, Result, ErrorContent } from "../../modules/Client";
+import { ErrorContext, useStaticErrorManager } from "../../modules/ErrorContext";
 import { Form } from "../Form/Form";
 import { useResults } from "../Result/ResultContext";
 import { useNavigate } from "react-router-dom";
 
 export function Service() {
+    const [errorManager, setErrors] = useStaticErrorManager();
+    const [isWaiting, setIsWaiting] = useState<boolean>(false)
     const fieldDefs = useFields();
     const client = useClient();
     const results = useResults();
     const navigate = useNavigate();
     const handleSubmit: FormEventHandler = (event) => {
+        setIsWaiting(true);
         event.preventDefault();
         event.stopPropagation();
         const values = fieldDefs.reduce<{[x: string]: string}>((acc, fd) => {
@@ -20,8 +24,38 @@ export function Service() {
             return acc;
         }, {});
         const query = client.query(values);
-        const resultRef = results.addResult(query, client.id);
-        navigate(`/results/${resultRef.id}`);
+
+        query.get().then((result) => {
+            if ("errors" in result) {
+                setErrors(
+                    result.errors.map(e => (
+                        "fieldId" in e ? {
+                            ...e,
+                            groupId: `field.${e.fieldId}`,
+                        } : {
+                            ...e,
+                            groupId: null,
+                        }
+                    ))
+                )
+                setIsWaiting(false);
+            } else {
+                const resultRef = results.addResult(result, client.id);
+                navigate(`/results/${resultRef.id}`);
+            }
+        }).catch((e) => {
+            const errorResult: Result<ErrorContent> = [
+                {
+                    id: "error",
+                    label: "Error",
+                    description: e.toString(),
+                    content: {type: "error"},
+                }
+            ]
+            const resultRef = results.addResult(errorResult, client.id);
+            navigate(`/results/${resultRef.id}`);
+        });
+
     }
     return (
         <section className="section has-background-custom-grey-light">
@@ -29,7 +63,9 @@ export function Service() {
                 <h2 className="title is-size-4-mobile has-text-centered">Input</h2>
                 <div className="columns is-centered">
                     <div className="column is-two-thirds">
-                        <Form handleSubmit={handleSubmit}/>
+                        <ErrorContext.Provider value={errorManager}>
+                            {!isWaiting ? <Form handleSubmit={handleSubmit}/> : "Waiting for result"}
+                        </ErrorContext.Provider>
                     </div>
                 </div>
             </div>

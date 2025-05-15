@@ -25,14 +25,14 @@ class Result:
 @dataclass
 class Error:
     id: str
-    description: Optional[str]
+    description: Optional[str] = None
 
 
 @dataclass
 class FieldError:
     fieldId: str
     id: str
-    description: Optional[str]
+    description: Optional[str] = None
 
 
 @dataclass

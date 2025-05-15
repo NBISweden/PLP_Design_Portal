@@ -1,5 +1,6 @@
 import React from "react";
 import { FieldDef, FieldManager, StaticFieldManager } from "../components/Fields"
+import { Error } from "./ErrorContext"
 import { DataOrReference, fetchReference } from "./utils"
 
 export type Description = {
@@ -18,9 +19,15 @@ export interface Query<T> {
 
 export type Result<T> = Entry<T>[];
 
+export type FieldError = {
+    fieldId: string;
+} & Error;
+
+export type ErrorResult = {errors: (Error | FieldError)[]};
+
 export interface ClientAPI<T> {
     id: string;
-    query(values: Record<string, string>): Query<Result<T>>;
+    query(values: Record<string, string>): Query<Result<T> | ErrorResult>;
     translation: TranslationResource;
     fields: FieldManager;
     links: Link[]
@@ -73,7 +80,7 @@ export class HttpClientAPI<T> implements ClientAPI<T>{
         this._rootUrl = rootUrl;
     }
 
-    query(values: Record<string, string>): Query<Result<T>> {
+    query(values: Record<string, string>): Query<Result<T> | ErrorResult> {
         return new HttpQuery(this, values);
     }
 
@@ -143,7 +150,6 @@ export const ClientContext = React.createContext<ClientAPI<BasicContent>>({
     translation: {},
     fields: new StaticFieldManager([]),
     links: [],
-
 });
 
 export function useClient() {
