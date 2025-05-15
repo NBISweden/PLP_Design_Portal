@@ -23,7 +23,8 @@
             "transcript",
             "three_prime_utr",
             "five_prime_utr"
-        ]
+        ],
+        "default": "CDS"
     },
     {
         "id": "source_sequence.fasta_source_sequence_absent",

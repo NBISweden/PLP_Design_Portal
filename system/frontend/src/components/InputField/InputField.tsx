@@ -5,6 +5,7 @@ type Props = ({
         label: string;
         required?: boolean;
         name?: string;
+        defaultValue?: string | number;
         placeholder?: string;
     } & (
         {
@@ -17,7 +18,7 @@ type Props = ({
 )
 
 export function InputField(props: Props) {
-    const {label, required, name, placeholder} = props;
+    const {label, required, name, placeholder, defaultValue} = props;
     const id = React.useId();
     return (
         <>
@@ -29,6 +30,7 @@ export function InputField(props: Props) {
                             id={id}
                             name={name}
                             rows={props.rows}
+                            defaultValue={defaultValue}
                             required={required}
                             className="textarea"
                             placeholder={placeholder}
@@ -38,6 +40,7 @@ export function InputField(props: Props) {
                             type={props.type}
                             id={id}
                             name={name}
+                            defaultValue={defaultValue}
                             required={required}
                             className="input"
                             placeholder={placeholder}
