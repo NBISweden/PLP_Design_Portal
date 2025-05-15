@@ -59,6 +59,9 @@ def create_app():
             "fields": {
                 "url": "/fields.json"
             },
+            "layout": {
+                "url": "/layout.json"
+            },
         })
 
     @app.route('/translation.json')
@@ -68,6 +71,10 @@ def create_app():
     @app.route('/fields.json')
     def fields():
         return jsonify(adapter.fields)
+
+    @app.route('/layout.json')
+    def layout():
+        return jsonify(adapter.layout)
 
     @app.route('/')
     def index():

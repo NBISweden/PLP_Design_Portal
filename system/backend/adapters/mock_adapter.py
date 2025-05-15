@@ -16,6 +16,7 @@ class MockAdapter:
     def __init__(self, data_directory: str):
         self._fields = load_json(os.path.join(data_directory, "fields.json"))
         self._translation = load_json(os.path.join(data_directory, "translation.json"))
+        self._layout = load_json(os.path.join(data_directory, "layout.json"))
 
     @property
     def fields(self):
@@ -24,6 +25,10 @@ class MockAdapter:
     @property
     def translation(self):
         return self._translation
+
+    @property
+    def layout(self):
+        return self._layout
 
     links = [
         {

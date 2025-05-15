@@ -6,7 +6,15 @@
                 "download_file": "Download '{{name}}'"
             },
             "form": {
-                
+                "submit": "Submit",
+                "show_example": "Show example",
+                "groups": {
+                    "source_sequence": "Source Sequence",
+                    "probe_design": "Probe Design",
+                    "color_code": "Color Code",
+                    "anchor_and_spacer": "Anchor & Spacer",
+                    "genome": "Genome"
+                }
             },
             "service": {
                 "title": "ISS Probe design",

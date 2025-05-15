@@ -1,6 +1,7 @@
 import React from "react";
 import { FieldDef, FieldManager, StaticFieldManager } from "../components/Fields"
 import { Error } from "./ErrorContext"
+import { FormLayout } from "../components/Form/Form"
 import { DataOrReference, fetchReference } from "./utils"
 
 export type Description = {
@@ -30,6 +31,7 @@ export interface ClientAPI<T> {
     query(values: Record<string, string>): Query<Result<T> | ErrorResult>;
     translation: TranslationResource;
     fields: FieldManager;
+    layout: FormLayout;
     links: Link[]
 }
 
@@ -52,6 +54,7 @@ export type HttpClientConfig = {
     links?: Link[],
     translation?: DataOrReference<TranslationResource>,
     fields?: DataOrReference<FieldDef[]>,
+    layout?: DataOrReference<FormLayout>,
 }
 
 export class HttpQuery<T> implements Query<Result<T>> {
@@ -71,6 +74,7 @@ export class HttpClientAPI<T> implements ClientAPI<T>{
     public readonly id: string;
     private _rootUrl: string;
     private _translation: TranslationResource = {};
+    private _layout: FormLayout = [];
     private _fields: FieldManager = new StaticFieldManager([]);
     private _links: Link[] = [];
 
@@ -80,7 +84,7 @@ export class HttpClientAPI<T> implements ClientAPI<T>{
         this._rootUrl = rootUrl;
     }
 
-    query(values: Record<string, string>): Query<Result<T> | ErrorResult> {
+    query(values: Record<string, string>): Query<Result<T>> {
         return new HttpQuery(this, values);
     }
 
@@ -90,6 +94,10 @@ export class HttpClientAPI<T> implements ClientAPI<T>{
 
     get fields() {
         return this._fields;
+    }
+
+    get layout() {
+        return this._layout;
     }
 
     get links() {
@@ -106,14 +114,19 @@ export class HttpClientAPI<T> implements ClientAPI<T>{
         const client = new HttpClientAPI<T>(config.id, config.rootUrl);
         const translationRef = config.translation;
         const fieldsRef = config.fields;
+        const layoutRef = config.layout;
 
-        const [translation, fields] = await Promise.all([
+        const [translation, fields, layout] = await Promise.all([
             translationRef !== undefined ? fetchReference(translationRef) : Promise.resolve(undefined),
             fieldsRef !== undefined ? fetchReference(fieldsRef) : Promise.resolve(undefined),
+            layoutRef !== undefined ? fetchReference(layoutRef) : Promise.resolve(undefined),
         ])
 
         if (translation) {
             client._translation = translation;
+        }
+        if (layout) {
+            client._layout = layout;
         }
         if (fields) {
             client._fields = new StaticFieldManager(fields);
@@ -150,6 +163,7 @@ export const ClientContext = React.createContext<ClientAPI<BasicContent>>({
     translation: {},
     fields: new StaticFieldManager([]),
     links: [],
+    layout: [],
 });
 
 export function useClient() {
