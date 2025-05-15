@@ -9,7 +9,8 @@ import os
 import logging
 from flask_compress import Compress  # type: ignore
 from dataclasses import asdict
-from adapters.mock_adapter import create_adapter
+from adapters.plp_adapter import create_adapter
+from adapters.result_data import result_to_data
 
 
 def parse_query(args: dict[str, str]):
@@ -40,11 +41,12 @@ def create_app():
     def service():
         data = parse_query(request.args)
         result = adapter.run(data)
+        url_format = "/deferred/{id}"
 
         return (
-            jsonify([asdict(r) for r in result])
+            jsonify([result_to_data(r, url_format) for r in result])
             if isinstance(result, list)
-            else jsonify(asdict(result))
+            else jsonify(result)
         )
 
     @app.route('/deferred/<result_id>')
