@@ -99,7 +99,7 @@ class MockAdapter:
                 id="mock-deferred",
                 label="Mock Deferred",
                 content=DeferredResult(
-                    url="/deferred/test-deferred",
+                    id="test-deferred",
                     status=[
                         DeferredStatus(
                             progress=100,

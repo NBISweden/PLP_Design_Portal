@@ -61,7 +61,12 @@ function FormGroup(group: LayoutGroup) {
                     return <FormField key={`form.field.${item.id}`} {...item}/>
                 } else if (item.type == "content") {
                     const contentKey = `form.content.${item.id}`
-                    return <div key={contentKey}>{t(contentKey)}</div>
+                    return (
+                        <>
+                            <div key={contentKey}>{t(contentKey)}</div>
+                            <hr/>
+                        </>
+                    )
                 }
             })}
         </fieldset>

@@ -9,7 +9,8 @@ import os
 import logging
 from flask_compress import Compress  # type: ignore
 from dataclasses import asdict
-from adapters.mock_adapter import create_adapter
+from adapters.plp_adapter import create_adapter
+from adapters.result_data import result_to_data, result_data_to_data
 
 
 def parse_query(args: dict[str, str]):
@@ -32,6 +33,8 @@ def create_app():
     app.secret_key = os.getenv("APP_SECRET_KEY", os.urandom(24).hex())
     Compress(app)
 
+    deferred_url_format = "/deferred/{id}"
+
     @app.route('/api')
     def root():
         return jsonify(adapter.info)
@@ -42,9 +45,9 @@ def create_app():
         result = adapter.run(data)
 
         return (
-            jsonify([asdict(r) for r in result])
+            jsonify([result_to_data(r, deferred_url_format) for r in result])
             if isinstance(result, list)
-            else jsonify(asdict(result))
+            else jsonify(result)
         )
 
     @app.route('/deferred/<result_id>')
@@ -53,7 +56,7 @@ def create_app():
         if deferred_result is None:
             abort(404)
         else:
-            return jsonify(asdict(deferred_result))
+            return jsonify(result_data_to_data(deferred_result, deferred_url_format))
 
     @app.route('/config.json')
     def config():
