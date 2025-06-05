@@ -27,6 +27,7 @@ class DeferredResult:
     status: list[DeferredStatus]
     id: str
     type: str = "deferred"
+    url: Optional[str] = None
 
     @staticmethod
     def from_data(data: dict):
@@ -79,13 +80,15 @@ def result_to_data(result: Result, url_format: str) -> dict:
     return asdict(updated_result)
 
 
-def result_data_to_data(data: TableData | FileData | DeferredResult, url_format: str) -> dict: 
+def result_data_to_data(data: TableData | FileData | DeferredResult, url_format: str) -> TableData | FileData | DeferredResult:
     if isinstance(data, DeferredResult):
-        deferred_data = asdict(data)
-        deferred_data["url"] = url_format.format(id=data.id)
+        deferred_data = replace(
+            data,
+            url=url_format.format(id=data.id)
+        )
         return deferred_data
     else:
-        return asdict(data)
+        return data
 
 
 def result_data_from_data(data):

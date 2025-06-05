@@ -8,7 +8,6 @@ from flask import (
 import os
 import logging
 from flask_compress import Compress  # type: ignore
-from dataclasses import asdict
 from adapters.plp_adapter import create_adapter
 from adapters.result_data import result_to_data, result_data_to_data
 
