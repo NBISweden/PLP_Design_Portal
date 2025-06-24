@@ -1,76 +1,89 @@
-import {Field} from "../Field/Field";
+import {Field, WidgetProps} from "../Field/Field";
 import {InputField} from "../InputField/InputField";
 import {FormEventHandler} from "react";
 import "./Form.css";
+import { useTranslation } from "react-i18next";
 
 interface FormProps {
     handleSubmit: FormEventHandler;
+    layout: FormLayout
 }
 
-export function Form({ handleSubmit }: FormProps) {
-    return <form onSubmit={handleSubmit}>
+
+type FieldRef = {
+    type: "field";
+    id: string;
+    widget?: {
+        type: "textarea";
+        rows?: number;
+    }
+};
+
+type ContentRef = {
+    type: "content";
+    id: string;
+}
+
+type LayoutGroup = {
+    id: string;
+    fields: (FieldRef | ContentRef | FieldRef[])[];
+}
+
+export type FormLayout = LayoutGroup[]
+
+
+function FormField(field: FieldRef) {
+    const widget = field.widget;
+    const extras = widget ? {
+        widget: (props: WidgetProps) => (<InputField {...props} {...widget}/>)
+    } : {};
+    return <Field id={field.id} {...extras}/>
+}
+
+function FormGroup(group: LayoutGroup) {
+    const {t} = useTranslation();
+    const label = t(`form.groups.${group.id}`);
+    return (
         <fieldset className="box">
-            <legend className="label is-size-5 has-text-weight-medium has-text-grey-dark">Source sequences for target
-                design
-            </legend>
-            <Field id="source_sequence.gene_transcript_name_or_fasta" widget={((props) => (<InputField {...props} type="textarea" rows={5}/>))}  />
-            <div className="columns is-vcentered">
-                <div className="column">
-                    <Field id="source_sequence.attribute_identifier"/>
-                </div>
-                <div className="column">
-                    <Field id="source_sequence.feature_identifier"/>
-                </div>
-            </div>
-            <Field id="source_sequence.fasta_source_sequence_absent"/>
+            <legend className="label is-size-5 has-text-weight-medium has-text-grey-dark">{label}</legend>
+            {group.fields.map((item, index) => {
+                if (Array.isArray(item)) {
+                    return (
+                        <div className="columns is-vcentered" key={`form.section.${index}`}>
+                            {item.map(subitem => (
+                                <div className="column" key={`form.field.${subitem.id}`}>
+                                    <FormField {...subitem}/>
+                                </div>
+                            ))}
+                        </div>
+                    );
+                } else if (item.type == "field") {
+                    return <FormField key={`form.field.${item.id}`} {...item}/>
+                } else if (item.type == "content") {
+                    const contentKey = `form.content.${item.id}`
+                    return (
+                        <>
+                            <div key={contentKey}>{t(contentKey)}</div>
+                            <hr/>
+                        </>
+                    )
+                }
+            })}
         </fieldset>
-        <fieldset className="box">
-            <legend className="label is-size-5 has-text-weight-medium has-text-grey-dark">Probe design</legend>
-            <div className="columns is-vcentered">
-                <div className="column">
-                    <Field id="probe_design.probe_arm_length"/>
-                </div>
-                <div className="column">
-                    <Field id="probe_design.min_genome_distance"/>
-                </div>
-            </div>
-            <Field id="probe_design.use_hamming_distance"/>
-            <Field id="probe_design.only_one_unique_arm"/>
-            <Field id="probe_design.allow_overlapping_probes"/>
-        </fieldset>
-        <fieldset className="box">
-            <legend className="label is-size-5 has-text-weight-medium has-text-grey-dark">Color code</legend>
-            <div className="columns is-vcentered">
-                <div className="column">
-                    <Field id="color_code.amount_of_colors"/>
-                </div>
-                <div className="column">
-                    <Field id="color_code.length_of_code"/>
-                </div>
-            </div>
-        </fieldset>
-        <fieldset className="box">
-            <legend className="label is-size-5 has-text-weight-medium has-text-grey-dark">Anchor and spacer sequences
-            </legend>
-            <div className="columns is-vcentered">
-                <div className="column">
-                    <Field id="anchor_and_spacer.anchor" widget={((props) => (<InputField {...props} type="textarea" rows={1}/>))}/>
-                </div>
-                <div className="column">
-                    <Field id="anchor_and_spacer.spacer_left" widget={((props) => (<InputField {...props} type="textarea" rows={1}/>))}/>
-                </div>
-                <div className="column">
-                    <Field id="anchor_and_spacer.spacer_right" widget={((props) => (<InputField {...props} type="textarea" rows={1}/>))}/>
-                </div>
-            </div>
-        </fieldset>
-        <fieldset className="box">
-            <legend className="label is-size-5 has-text-weight-medium has-text-grey-dark">Genome</legend>
-            <Field id="genome.genome"/>
-        </fieldset>
-        <button type="submit" className="button is-pulled-right is-primary">Launch analysis
-        </button>
-        <button type="submit" className="button is-pulled-right is-secondary-custom mr-3">Show example
-        </button>
-    </form>;
+    )
+}
+
+export function Form({ handleSubmit, layout }: FormProps) {
+    const {t} = useTranslation();
+    return (
+        <form onSubmit={handleSubmit}>
+            {layout.map(group => {
+                return (
+                    <FormGroup key={group.id} {...group}/>
+                );
+            })}
+            <button type="submit" className="button is-pulled-right is-primary">{t("form.submit")}</button>
+            <button type="submit" className="button is-pulled-right is-secondary-custom mr-3">{t("form.show_example")}</button>
+        </form>
+    )
 }

@@ -3,37 +3,26 @@ from flask import (
     jsonify,
     send_file,
     request,
+    abort,
 )
 import os
 import logging
 from flask_compress import Compress  # type: ignore
-from dataclasses import dataclass, asdict
+from adapters.plp_adapter import create_adapter
+from adapters.result_data import result_to_data, result_data_to_data
 
 
-def parse_plp_query(args: dict[str, str]):
+def parse_query(args: dict[str, str]):
     return {
         key: str(value)
         for (key, value) in args.items()
     }
 
 
-@dataclass
-class TableData:
-    headers: dict[str, str]
-    entries: list[dict[str, str]]
-    type: str = "table"
-
-
-@dataclass
-class Result:
-    id: str
-    label: str
-    content: TableData
-
-
 def create_app():
+    adapter = create_adapter()
     logger = logging.getLogger(__name__)
-    logger.info("Creating app")
+    logger.info(f"Creating app: {adapter.name}")
 
     app = Flask(
         __name__,
@@ -43,38 +32,60 @@ def create_app():
     app.secret_key = os.getenv("APP_SECRET_KEY", os.urandom(24).hex())
     Compress(app)
 
+    deferred_url_format = "/deferred/{id}"
+
     @app.route('/api')
     def root():
-        return jsonify({"message": "Hello from PLP Design Portal!"})
+        return jsonify(adapter.info)
 
-    @app.route('/api/plp_search')
-    def plp_search():
-        data = parse_plp_query(request.args)
-        result = Result(
-            id="plp-search",
-            label="PLP Search",
-            content=TableData(
-                headers={
-                    "value": "Value",
-                    "param": "Param"
-                },
-                entries=[
-                    {"param": param, "value": value}
-                    for param, value in data.items()
-                ]
-            )
+    @app.route(f'/api/{adapter.name}')
+    def service():
+        data = parse_query(request.args)
+        result = adapter.run(data)
+
+        return (
+            jsonify([result_to_data(r, deferred_url_format) for r in result])
+            if isinstance(result, list)
+            else jsonify(result)
         )
-        return jsonify([
-            asdict(result)
-        ])
+
+    @app.route('/deferred/<result_id>')
+    def deferred_result(result_id: str):
+        deferred_result = adapter.get_deferred_result(result_id=result_id)
+        if deferred_result is None:
+            abort(404)
+        else:
+            return jsonify(result_data_to_data(deferred_result, deferred_url_format))
 
     @app.route('/config.json')
     def config():
         return jsonify({
-            "rootUrl": f"{request.host_url}api/plp_search",
+            "rootUrl": f"/api/{adapter.name}",
             "id": "plp",
             "language": "en",
+            "links": adapter.links,
+            "translation": {
+                "url": "/translation.json"
+            },
+            "fields": {
+                "url": "/fields.json"
+            },
+            "layout": {
+                "url": "/layout.json"
+            },
         })
+
+    @app.route('/translation.json')
+    def translation():
+        return jsonify(adapter.translation)
+
+    @app.route('/fields.json')
+    def fields():
+        return jsonify(adapter.fields)
+
+    @app.route('/layout.json')
+    def layout():
+        return jsonify(adapter.layout)
 
     @app.route('/')
     def index():

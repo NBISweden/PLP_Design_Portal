@@ -1,0 +1,3 @@
+[submodule "system/PLP_directRNA_design_V2"]
+	path = system/PLP_directRNA_design_V2
+	url = git@github.com:Moldia/PLP_directRNA_design_V2.git

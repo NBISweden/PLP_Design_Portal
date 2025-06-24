@@ -1,18 +1,31 @@
 import { InputField, CheckBox, DropDown} from "../Fields"
 import { useField, FieldDef } from "./FieldContext";
 import { useTranslation } from "react-i18next";
+import { getErrorMessage } from "../../modules/utils";
+import { useFieldErrors } from "../../modules/ErrorContext";
 
+export type WidgetProps = {
+    label: string,
+    type: string,
+    name: string,
+    placeholder: string,
+    required: boolean,
+    default?: unknown,
+    options?: {
+        value: unknown,
+        label: string
+    }[]
+}
 
 export function FieldView(props: {
     fieldDef: FieldDef,
-    widget?: (props: any) => JSX.Element
+    widget?: (props: WidgetProps) => JSX.Element
 }) {
     const {t} = useTranslation();
     const fieldDef = props.fieldDef;
     const widget = props.widget;
     const label = t(`fields.${fieldDef.id}.label`);
     const name = fieldDef.id;
-    const defaultValue = fieldDef.default;
     const options = (
         fieldDef.type == "choice"
         ? fieldDef.options.map(o => ({
@@ -29,20 +42,25 @@ export function FieldView(props: {
     const required = fieldDef.required === undefined ? false : fieldDef.required;
 
     if (widget !== undefined) {
+        const defaultValue = fieldDef.default;
         return widget({label, type: fieldDef.type, name, default: defaultValue, options, placeholder, required})
     } else {
         switch (fieldDef.type) {
             case "choice": {
-                return <DropDown label={label} name={name} options={options} required={required}/>
+                const defaultValue = fieldDef.default;
+                return <DropDown label={label} name={name} defaultValue={defaultValue} options={options} required={required}/>
             }
             case "number": {
-                return <InputField type="number" name={name} label={label} placeholder={placeholder} required={required}/>
+                const defaultValue = fieldDef.default;
+                return <InputField type="number" name={name} defaultValue={defaultValue} label={label} placeholder={placeholder} required={required}/>
             }
             case "text": {
-                return <InputField type="text" name={name} label={label} placeholder={fieldDef.placeholder} required={required}/>
+                const defaultValue = fieldDef.default;
+                return <InputField type="text" name={name} defaultValue={defaultValue} label={label} placeholder={fieldDef.placeholder} required={required}/>
             }
             case "yesno": {
-                return <CheckBox name={name} label={label} required={required}/>
+                const defaultValue = fieldDef.default;
+                return <CheckBox name={name} label={label} defaultValue={defaultValue} required={required}/>
             }
         }
     }
@@ -64,16 +82,25 @@ export function MissingField({id, message}: {id: string, message: string}) {
 
 export function Field(props: {
     id: string,
-    widget?: (props: any) => JSX.Element
+    widget?: (props: WidgetProps) => JSX.Element
 }) {
+    const {t} = useTranslation();
     const {id, widget} = props;
+    const errors = useFieldErrors(id);
     try {
         const fieldDef = useField(id);
         return (
-            <FieldView fieldDef={fieldDef} widget={widget}/>
+            <>
+                <FieldView fieldDef={fieldDef} widget={widget}/>
+                {errors.length > 0 ? <div>
+                    <ul>
+                        {errors.map((error, index) => (<li key={index}>{t(error.id, error.description || error.id)}</li>))}
+                    </ul>
+                </div> : <></>}
+            </>
         )
-    } catch(e: any) {
-        const message = "message" in e ? e.message : "Failed to get field";
+    } catch(e: unknown) {
+        const message = getErrorMessage(e, "Failed to get field");
         return (
             <MissingField id={id} message={message}/>
         );

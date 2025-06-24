@@ -3,6 +3,7 @@ import './DropDown.css'
 import { useState } from "react";
 
 interface Props {
+    defaultValue?: string | number;
     options?: {label: string, value: string | number}[];
     range?: { start: number; end: number };
     label: string;
@@ -21,7 +22,7 @@ function listenForClickOnce(action: () => void) {
 }
 
 
-export function DropDown( {options, label, name, range}: Props){
+export function DropDown( {options, label, name, range, defaultValue}: Props){
     const id = React.useId();
 
     const generateRangeOptions = (start: number, end: number) => {
@@ -35,8 +36,9 @@ export function DropDown( {options, label, name, range}: Props){
         ? generateRangeOptions(range.start, range.end)
         : options || [];
 
+    const selectedDefaultValue = defaultValue === undefined ? dropdownOptions[0]?.value : defaultValue;
     const [isOpen, setIsOpen] = useState(false);
-    const [selected, setSelected] = useState(dropdownOptions[0].value); // Default to first option
+    const [selected, setSelected] = useState(selectedDefaultValue);
 
     const handleDropdownSelection = (e: React.MouseEvent<HTMLAnchorElement>, value: string | number) => {
         e.preventDefault();
