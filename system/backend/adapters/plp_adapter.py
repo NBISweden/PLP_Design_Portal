@@ -9,7 +9,7 @@ from .result_data import (
     DeferredStatus,
     result_data_from_data
 )
-from plp_directrna_design import probedesign as plp  # type: ignore
+from plp_directrna_design import cli_utils as cli  # type: ignore
 from multiprocessing import Lock
 from concurrent.futures import ProcessPoolExecutor
 import os
@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Config:
     genome: str
-    genes: str = "Grik2"
+    genes: set[str] = frozenset({"Grik2"})
     identifier_type: Literal["gene_name", "gene_id"] = "gene_name"
     gene_feature: Literal["CDS", "exon"] = "CDS"
     plp_length: int = 30
@@ -49,7 +49,7 @@ class Config:
     def from_data(data):
         return Config(
             genome=data["genome"],
-            genes=data["genes"],
+            genes=cli.parse_genes(data["genes"]),
             identifier_type=data["identifier_type"],
             gene_feature=data["gene_feature"],
             plp_length=int(data["plp_length"]),
@@ -436,19 +436,6 @@ def cwd_context(target_cwd):
         os.chdir(original_cwd)
 
 
-def extract_features(
-    gtf_file: str,
-    genes_str=None,
-    identifier_type='gene_id',
-    gene_feature='CDS'
-):
-    # Parse the GTF file and filter by gene list
-    gtf_df, genes_of_interest = plp.parse_gtf(gtf_file, genes_str, identifier_type)
-
-    # Merge regions and calculate coverage
-    return plp.merge_regions_and_coverage(genes_of_interest, gtf_df)
-
-
 def write_deferred_status(deferred_result_path: str, result_id: str, status: DeferredStatus):
     with get_id_lock(result_id):
         current_result = None
@@ -549,13 +536,13 @@ def run_prope_design(
                 regions_output_path = os.path.join(workdir, "regions")
                 result_output_path = os.path.join(workdir, "result.csv")
 
-                extracted_features = extract_features(
+                cli.extract_features(
                     gtf_file=gtf_path,
-                    genes_str=config.genes,
+                    output_file=extracted_features_output_path,
+                    genes=config.genes,
                     identifier_type=config.identifier_type,
                     gene_feature=config.gene_feature
                 )
-                extracted_features.to_csv(extracted_features_output_path, sep='\t', index=False)
                 write_deferred_status(
                     deferred_result_path,
                     result_id,
@@ -565,7 +552,7 @@ def run_prope_design(
                     )
                 )
 
-                extract_mrna(
+                cli.extract_mrna(
                     gtf_file=gtf_path,
                     output_file=transcriptome_output_path,
                     fasta_file=fa_path,
@@ -579,8 +566,8 @@ def run_prope_design(
                     )
                 )
 
-                extract_sequences(
-                    extracted_features=extracted_features,
+                cli.extract_sequences(
+                    gtf_output=extracted_features_output_path,
                     fasta_file=fa_path,
                     output_fasta=extracted_sequences_fa_output_path,
                     plp_length=config.plp_length,
@@ -596,11 +583,12 @@ def run_prope_design(
                     )
                 )
 
-                targets_df = find_targets(
+                targets_df = cli.find_target(
                     selected_features=extracted_features_output_path,
                     fasta_file=extracted_sequences_fa_output_path,
                     output_file=result_output_path,
                     reference_fasta=extracted_sequences_fa_output_path,
+                    min_coverage=1,
                     num_probes=config.number_of_probes,
                     iupac_mismatches=config.iupac_mismatches,
                     max_errors=config.max_errors,
@@ -618,7 +606,7 @@ def run_prope_design(
                     result_id,
                     DeferredStatus(
                         progress=100,
-                        description=f"find_targets: {current_time() - start_time}"
+                        description=f"find_target: {current_time() - start_time}"
                     )
                 )
 
@@ -645,104 +633,6 @@ def run_prope_design(
                 description=f"Search failed: {e}: {current_time() - start_time}"
             )
         )
-
-
-def extract_mrna(
-    gtf_file: str,
-    fasta_file: str,
-    output_file: str,
-):
-    records = plp.extract_mrna_sequences(
-        fasta_file=fasta_file,
-        gtf_file=gtf_file,
-        output_file=output_file,
-        plus_strand_only=False,
-        revcomp=False,
-        translate=False,
-        codon_table=1,
-        alternative_start_codon=True,
-        clean_final_stop=True,
-        clean_internal_stop=False,
-        verbose=False
-    )
-    return records
-
-
-def extract_sequences(
-    extracted_features,
-    fasta_file: str,
-    output_fasta: str,
-    plp_length: int,
-    identifier_type: Literal["gene_name", "gene_id"],
-    regions_file: str
-):
-    # Ensure FASTA index exists
-    plp.check_fasta_index(fasta_file)
-
-    # Save regions for fast retrieval
-    plp.save_regions_for_faidx(extracted_features, regions_file, plp_length, identifier_type=identifier_type)
-
-    # Extract sequences
-    plp.extract_sequences(fasta_file, regions_file + ".txt", output_fasta, extracted_features)
-
-
-def find_targets(
-    selected_features,
-    fasta_file,
-    output_file,
-    reference_fasta,
-    min_coverage=1,
-    gc_min=50,
-    gc_max=65,
-    num_probes=10,
-    iupac_mismatches=None,
-    max_errors=1,
-    check_specificity=False,
-    plp_length=30,
-    Tm_min=55,
-    Tm_max=65,
-    lowest_percentile_Tm_score_cutoff=5,
-    min_dist_probes=10,
-    filter_ligation_junction=True,
-    off_target_output=False
-):
-    targets_df, off_target_info = plp.find_targets(
-        selected_features=selected_features,
-        fasta_file=fasta_file,
-        reference_fasta=reference_fasta,
-        plp_length=plp_length,
-        min_coverage=min_coverage,
-        output_file=output_file,
-        gc_min=gc_min,
-        gc_max=gc_max,
-        num_probes=num_probes,
-        iupac_mismatches=iupac_mismatches,
-        max_errors=max_errors,
-        check_specificity=check_specificity,
-        off_target_output=off_target_output
-    )
-    if off_target_output:
-        # Save the off-target information
-        off_target_info.to_csv(output_file.replace('.tsv', '_off_target.tsv'), sep='\t', index=False)
-
-    # Calculate the melting temperature scores
-    sequences = targets_df['Sequence']
-    scores = [plp.score_padlock_probe(seq, Tm_min=Tm_min, Tm_max=Tm_max) for seq in sequences]
-    targets_df['Melt_Tm_scores'] = scores
-    # Calculate the suggested cutoff based on the 5th percentile
-    suggested_cutoff = plp.analyze_scores(scores, percentile=lowest_percentile_Tm_score_cutoff)
-    # Filter the targets based on the suggested cutoff
-    targets_df = targets_df[targets_df['Melt_Tm_scores'] <= suggested_cutoff]
-    # Filteer the probes based on the minimum distance between probes
-    targets_df = plp.filter_probes_by_distance(targets_df, min_dist_probes=min_dist_probes)
-    # filter the probes based on the ligation junction preferences
-    if filter_ligation_junction:
-        targets_df = targets_df[targets_df['Ligation junction'] != 'non-preferred']
-
-    targets_df = plp.select_top_probes(targets_df, num_probes)
-    # Save the output
-    targets_df.to_csv(output_file, sep='\t', index=False)
-    return targets_df
 
 
 def create_adapter():
