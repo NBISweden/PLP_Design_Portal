@@ -4,7 +4,6 @@ from .result_data import (
     Error,
     FieldError,
     TableData,
-    DeferredResult,
     DeferredStatus
 )
 import json
@@ -46,23 +45,7 @@ class MockAdapter:
         "version": "0.0.1"
     }
 
-    def get_deferred_result(self, result_id: str):
-        if result_id == "test-deferred":
-            data = self._last_data
-            return TableData(
-                headers={
-                    "value": "Value",
-                    "param": "Param"
-                },
-                entries=[
-                    {"param": param, "value": value}
-                    for param, value in data.items()
-                ]
-            )
-        else:
-            return None
-
-    def run(self, data) -> list[Result] | ErrorResult:
+    def run(self, data, result_context) -> list[Result] | ErrorResult:
         self._last_data = data
         field_ids = [field["id"] for field in self._fields]
         result_choice = random.choice(["deferred"])
@@ -94,19 +77,18 @@ class MockAdapter:
                 )
             ),
         ]
+        deferred_result_control = result_context.allocate_result()
+        deferred_result_control.update_status(
+            DeferredStatus(
+                progress=100,
+                description="Success"
+            )
+        )
         deferred_result = [
             Result(
                 id="mock-deferred",
                 label="Mock Deferred",
-                content=DeferredResult(
-                    id="test-deferred",
-                    status=[
-                        DeferredStatus(
-                            progress=100,
-                            description="Success"
-                        )
-                    ]
-                )
+                content=deferred_result_control.get_result()
             )
         ]
 

@@ -1,4 +1,4 @@
-from dataclasses import dataclass, asdict, replace
+from dataclasses import dataclass, asdict
 from typing import Optional
 
 
@@ -26,8 +26,8 @@ class DeferredStatus:
 class DeferredResult:
     status: list[DeferredStatus]
     id: str
+    url: str
     type: str = "deferred"
-    url: Optional[str] = None
 
     @staticmethod
     def from_data(data: dict):
@@ -37,6 +37,7 @@ class DeferredResult:
         ]
         return DeferredResult(
             id=str(data["id"]),
+            url=str(data["url"]),
             status=status
         )
 
@@ -72,23 +73,8 @@ class ErrorResult:
     errors: list[Error | FieldError]
 
 
-def result_to_data(result: Result, url_format: str) -> dict:
-    updated_result = replace(
-        result,
-        content=result_data_to_data(result.content, url_format)
-    )
-    return asdict(updated_result)
-
-
-def result_data_to_data(data: TableData | FileData | DeferredResult, url_format: str) -> TableData | FileData | DeferredResult:
-    if isinstance(data, DeferredResult):
-        deferred_data = replace(
-            data,
-            url=url_format.format(id=data.id)
-        )
-        return deferred_data
-    else:
-        return data
+def result_to_data(result: Result) -> dict:
+    return asdict(result)
 
 
 def result_data_from_data(data):

@@ -8,8 +8,9 @@ from flask import (
 import os
 import logging
 from flask_compress import Compress  # type: ignore
-from adapters.plp_adapter import create_adapter
-from adapters.result_data import result_to_data, result_data_to_data
+from adapters.mock_adapter import create_adapter
+from adapters.result_data import result_to_data
+from adapters.result_context import ResultContext
 
 
 def parse_query(args: dict[str, str]):
@@ -20,6 +21,10 @@ def parse_query(args: dict[str, str]):
 
 
 def create_app():
+    result_context = ResultContext(
+        url_format="/deferred/{id}",
+        result_root="/tmp"
+    )
     adapter = create_adapter()
     logger = logging.getLogger(__name__)
     logger.info(f"Creating app: {adapter.name}")
@@ -32,8 +37,6 @@ def create_app():
     app.secret_key = os.getenv("APP_SECRET_KEY", os.urandom(24).hex())
     Compress(app)
 
-    deferred_url_format = "/deferred/{id}"
-
     @app.route('/api')
     def root():
         return jsonify(adapter.info)
@@ -41,21 +44,21 @@ def create_app():
     @app.route(f'/api/{adapter.name}')
     def service():
         data = parse_query(request.args)
-        result = adapter.run(data)
+        result = adapter.run(data, result_context)
 
         return (
-            jsonify([result_to_data(r, deferred_url_format) for r in result])
+            jsonify([result_to_data(r) for r in result])
             if isinstance(result, list)
             else jsonify(result)
         )
 
     @app.route('/deferred/<result_id>')
     def deferred_result(result_id: str):
-        deferred_result = adapter.get_deferred_result(result_id=result_id)
+        deferred_result = result_context.get_result(id=result_id)
         if deferred_result is None:
             abort(404)
         else:
-            return jsonify(result_data_to_data(deferred_result, deferred_url_format))
+            return jsonify(deferred_result)
 
     @app.route('/config.json')
     def config():
