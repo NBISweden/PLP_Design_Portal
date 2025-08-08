@@ -1,87 +1,72 @@
-from dataclasses import dataclass, asdict
+from pydantic import BaseModel, PositiveInt
 from typing import Optional
+from collections import OrderedDict
+from typing import Literal
 
 
-@dataclass
-class TableData:
+class ResultData(BaseModel):
+    id: str
+
+    class Config:
+        frozen = True
+
+
+class TableData(ResultData):
     headers: dict[str, str]
     entries: list[dict[str, str]]
-    type: str = "table"
+    type: Literal["table"] = "table"
 
 
-@dataclass
-class DeferredStatus:
-    progress: int
+class StatusEntry(BaseModel):
+    progress: PositiveInt
     description: str
 
-    @staticmethod
-    def from_data(data: dict):
-        return DeferredStatus(
-            progress=int(data["progress"]),
-            description=str(data["description"])
-        )
+    class Config:
+        frozen = True
 
 
-@dataclass
-class DeferredResult:
-    status: list[DeferredStatus]
-    id: str
-    url: str
-    type: str = "deferred"
-
-    @staticmethod
-    def from_data(data: dict):
-        status = [
-            DeferredStatus.from_data(s)
-            for s in data["status"]
-        ]
-        return DeferredResult(
-            id=str(data["id"]),
-            url=str(data["url"]),
-            status=status
-        )
+class StatusData(ResultData):
+    status: list[StatusEntry]
+    type: Literal["status"] = "status"
 
 
-@dataclass
-class FileData:
+class FileData(ResultData):
     base64_data: str
-    type: str = "data"
+    type: Literal["data"] = "data"
 
 
-@dataclass
-class Result:
+class Result(BaseModel):
     id: str
     label: str
-    content: TableData | FileData | DeferredResult
+    items: list[TableData | FileData | StatusData] = []
+
+    class Config:
+        frozen = True
+
+    def set_item(self, data: TableData | FileData | StatusData):
+        items = OrderedDict((
+            (item.id, item)
+            for item in self.items
+        ))
+        items[data.id] = data
+        return self.copy(update={"items": list(items.values())})
 
 
-@dataclass
-class Error:
+class DeferredResult(Result):
+    url: str
+    refresh_rate: int
+
+
+class Error(BaseModel):
     id: str
     description: Optional[str] = None
 
 
-@dataclass
-class FieldError:
+class FieldError(BaseModel):
     fieldId: str
     id: str
     description: Optional[str] = None
 
 
-@dataclass
-class ErrorResult:
+class ErrorResult(Result):
     errors: list[Error | FieldError]
-
-
-def result_to_data(result: Result) -> dict:
-    return asdict(result)
-
-
-def result_data_from_data(data):
-    result_type = data["type"]
-    if result_type == "deferred":
-        return DeferredResult.from_data(data)
-    elif result_type == "table":
-        return TableData(**data)
-    elif result_type == "data":
-        return FileData(**data)

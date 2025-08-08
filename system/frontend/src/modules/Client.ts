@@ -9,16 +9,27 @@ export type Description = {
     description?: string;
 }
 
-export type Entry<T> = Description & {
+export type Entry = {
     id: string;
-    content: T;
+    label: string;
 }
 
 export interface Query<T> {
     get(): Promise<T>;
 }
 
-export type Result<T> = Entry<T>[];
+export type DeferredResult = {
+    id: string;
+    url: string;
+    refresh_rate: number;
+}
+
+export type Result<T extends Entry> = (
+    Description & {
+        id: string;
+        items: T[];
+    }
+) | DeferredResult;
 
 export type FieldError = {
     fieldId: string;
@@ -26,7 +37,7 @@ export type FieldError = {
 
 export type ErrorResult = {errors: (Error | FieldError)[]};
 
-export interface ClientAPI<T> {
+export interface ClientAPI<T extends Entry> {
     id: string;
     query(values: Record<string, string>): Query<Result<T> | ErrorResult>;
     translation: TranslationResource;
@@ -57,7 +68,7 @@ export type HttpClientConfig = {
     layout?: DataOrReference<FormLayout>,
 }
 
-export class HttpQuery<T> implements Query<Result<T>> {
+export class HttpQuery<T extends Entry> implements Query<Result<T>> {
     private _client: HttpClientAPI<T>;
     private _values: Record<string, string>;
     constructor(client: HttpClientAPI<T>, values: Record<string, string>) {
@@ -70,7 +81,7 @@ export class HttpQuery<T> implements Query<Result<T>> {
     }
 }
 
-export class HttpClientAPI<T> implements ClientAPI<T>{
+export class HttpClientAPI<T extends Entry> implements ClientAPI<T>{
     public readonly id: string;
     private _rootUrl: string;
     private _translation: TranslationResource = {};
@@ -110,7 +121,7 @@ export class HttpClientAPI<T> implements ClientAPI<T>{
         return await (await fetch(url.toString())).json()
     }
 
-    static async fromConfig<T>(config: HttpClientConfig): Promise<HttpClientAPI<T>> {
+    static async fromConfig<T extends Entry>(config: HttpClientConfig): Promise<HttpClientAPI<T>> {
         const client = new HttpClientAPI<T>(config.id, config.rootUrl);
         const translationRef = config.translation;
         const fieldsRef = config.fields;
@@ -138,26 +149,17 @@ export class HttpClientAPI<T> implements ClientAPI<T>{
     }
 }
 
-export type TableContent = {
+export type TableContent = Entry & {
     type: "table",
     headers: {[id: string]: string},
     entries: {[x: string]: string}[]
 }
 
-export type DeferredResult = {
-    type: "deferred",
-    url: string,
-    status: {
-        progress: number,
-        description: string,
-    }[]
-}
-
-export type ErrorContent = {
+export type ErrorContent = Entry & {
     type: "error";
 }
 
-export type BasicContent = TableContent | DeferredResult | ErrorContent
+export type BasicContent = TableContent | ErrorContent
 
 export const ClientContext = React.createContext<ClientAPI<BasicContent>>({
     id: "none",
@@ -165,7 +167,11 @@ export const ClientContext = React.createContext<ClientAPI<BasicContent>>({
         return {
             get() {
                 console.log(values);
-                return Promise.resolve([]);
+                return Promise.resolve({
+                    label: "Result",
+                    id: "result",
+                    items: []
+                });
             }
         }
     },

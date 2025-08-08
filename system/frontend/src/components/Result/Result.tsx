@@ -2,7 +2,7 @@ import './Result.css'
 import { useTranslation } from "react-i18next";
 import { useParams } from 'react-router-dom';
 import { useResults } from "../Result/ResultContext";
-import { BasicContent, Entry } from "../../modules/Client";
+import { BasicContent } from "../../modules/Client";
 
 
 export function Result() {
@@ -16,8 +16,8 @@ export function Result() {
             <div className="container">
                 <div className="box">
                     <h2 className="title is-size-4-mobile has-text-centered">{t("results.title")}</h2>
-                    {result ? (
-                        result.result.map((entry, index) => (
+                    {result && "items" in result.result ? (
+                        result.result.items.map((entry, index) => (
                             <div key={index} className="result-container">
                                 <h2 className="title is-size-5-mobile is-size-4 mt-4 has-text-weight-normal">{entry.label}</h2>
                                 <ResultEntry {...entry}/>
@@ -31,16 +31,10 @@ export function Result() {
 }
 
 
-function ResultEntry(props: Entry<BasicContent>) {
-    switch(props.content.type) {
+function ResultEntry(props: BasicContent) {
+    switch(props.type) {
         case "table":
-            return <TableView headers={props.content.headers} entries={props.content.entries} name={props.label}/>
-        case "deferred":
-            const entries = props.content.status.map(s => ({
-                "progress": s.progress.toString(),
-                "info": s.description
-            }))
-            return <TableView headers={{"progress": "Progress", "info": "Info"}} entries={entries} name={props.label}/>
+            return <TableView headers={props.headers} entries={props.entries} name={props.label}/>
         default:
             return JSON.stringify(props)
     }

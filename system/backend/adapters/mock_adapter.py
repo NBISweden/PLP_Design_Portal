@@ -1,10 +1,12 @@
 from .result_data import (
     Result,
+    DeferredResult,
     ErrorResult,
     Error,
     FieldError,
     TableData,
-    DeferredStatus
+    StatusData,
+    StatusEntry,
 )
 import json
 import os
@@ -45,11 +47,13 @@ class MockAdapter:
         "version": "0.0.1"
     }
 
-    def run(self, data, result_context) -> list[Result] | ErrorResult:
+    def run(self, data, result_manager) -> Result | DeferredResult | ErrorResult:
         self._last_data = data
         field_ids = [field["id"] for field in self._fields]
-        result_choice = random.choice(["deferred"])
+        result_choice = random.choice(["error"])
         error_result = ErrorResult(
+            label="Error",
+            id="error",
             errors=[
                 *[
                     FieldError(
@@ -61,11 +65,12 @@ class MockAdapter:
                 Error(id="general-error")
             ]
         )
-        success_result = [
-            Result(
-                id="mock-search",
-                label="Mock Search",
-                content=TableData(
+        success_result = Result(
+            id="mock-search",
+            label="Mock Search",
+            items=[
+                TableData(
+                    id="data",
                     headers={
                         "value": "Value",
                         "param": "Param"
@@ -75,22 +80,21 @@ class MockAdapter:
                         for param, value in data.items()
                     ]
                 )
-            ),
-        ]
-        deferred_result_control = result_context.allocate_result()
-        deferred_result_control.update_status(
-            DeferredStatus(
-                progress=100,
-                description="Success"
+            ]
+        )
+        result_context = result_manager.create_context(label="Deferred result")
+        result_context.set_item(
+            StatusData(
+                id="status",
+                status=[
+                    StatusEntry(
+                        progress=100,
+                        description="Success"
+                    )
+                ]
             )
         )
-        deferred_result = [
-            Result(
-                id="mock-deferred",
-                label="Mock Deferred",
-                content=deferred_result_control.get_result()
-            )
-        ]
+        deferred_result = result_context.get_result()
 
         result_selector: dict[str, list[Result] | ErrorResult] = {
             "error": error_result,

@@ -9,8 +9,7 @@ import os
 import logging
 from flask_compress import Compress  # type: ignore
 from adapters.mock_adapter import create_adapter
-from adapters.result_data import result_to_data
-from adapters.result_context import ResultContext
+from adapters.result_manager import ResultManager
 
 
 def parse_query(args: dict[str, str]):
@@ -21,7 +20,7 @@ def parse_query(args: dict[str, str]):
 
 
 def create_app():
-    result_context = ResultContext(
+    result_manager = ResultManager(
         url_format="/deferred/{id}",
         result_root="/tmp"
     )
@@ -44,21 +43,17 @@ def create_app():
     @app.route(f'/api/{adapter.name}')
     def service():
         data = parse_query(request.args)
-        result = adapter.run(data, result_context)
+        result = adapter.run(data, result_manager)
 
-        return (
-            jsonify([result_to_data(r) for r in result])
-            if isinstance(result, list)
-            else jsonify(result)
-        )
+        return jsonify(result.model_dump())
 
     @app.route('/deferred/<result_id>')
     def deferred_result(result_id: str):
-        deferred_result = result_context.get_result(id=result_id)
-        if deferred_result is None:
+        result_context = result_manager.get_context(id=result_id)
+        if result_context is None:
             abort(404)
         else:
-            return jsonify(deferred_result)
+            return jsonify(result_context.get_result().model_dump())
 
     @app.route('/config.json')
     def config():
