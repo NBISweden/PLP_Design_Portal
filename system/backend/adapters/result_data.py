@@ -1,4 +1,4 @@
-from pydantic import BaseModel, PositiveInt
+from pydantic import BaseModel, NonNegativeInt
 from typing import Optional
 from collections import OrderedDict
 from typing import Literal
@@ -13,12 +13,12 @@ class ResultData(BaseModel):
 
 class TableData(ResultData):
     headers: dict[str, str]
-    entries: list[dict[str, str]]
+    entries: list[dict[str, str | int | float]]
     type: Literal["table"] = "table"
 
 
 class StatusEntry(BaseModel):
-    progress: PositiveInt
+    progress: NonNegativeInt
     description: str
 
     class Config:

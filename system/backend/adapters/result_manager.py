@@ -31,7 +31,7 @@ class ResultContext(BaseModel):
 
     def get_result(self) -> Result | DeferredResult:
         result = self.__read()
-        is_deferred = all([
+        is_deferred = any([
             isinstance(item, StatusData)
             for item in result.items
         ])
