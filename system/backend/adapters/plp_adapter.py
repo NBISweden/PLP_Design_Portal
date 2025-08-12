@@ -1,14 +1,14 @@
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from typing import Literal
 from .result_data import (
     Result,
     ErrorResult,
     TableData,
-    FileData,
     DeferredResult,
-    DeferredStatus,
-    result_data_from_data
+    StatusData,
+    StatusEntry,
 )
+from .result_manager import ResultManager, ResultContext
 from plp_directrna_design import probedesign as plp  # type: ignore
 from multiprocessing import Lock
 from concurrent.futures import ProcessPoolExecutor
@@ -82,9 +82,8 @@ def get_id_lock(id: str):
 class PLPAdapter:
     name = "plp_search"
 
-    def __init__(self, genome_list_path: str, deferred_result_path: str):
+    def __init__(self, genome_list_path: str):
         self._genome_list_path = genome_list_path
-        self._deferred_result_path = deferred_result_path
         self._executor = ProcessPoolExecutor(max_workers=4)
 
     @property
@@ -330,7 +329,7 @@ class PLPAdapter:
             },
         ]
 
-    def run(self, data) -> list[Result] | ErrorResult:
+    def run(self, data, result_manager: ResultManager) -> Result | DeferredResult | ErrorResult:
         config = Config.from_data(data)
         result_id = str(uuid.uuid4())
 
@@ -338,57 +337,44 @@ class PLPAdapter:
         src_fa_path = self._abs_genome_path(genome.fa_path)
         src_indexed_fa_path = f"{src_fa_path}.fai"
         src_gtf_path = self._abs_genome_path(genome.gtf_path)
-        deferred_result_path = self._get_deferred_result_path(result_id)
 
+        result_context = result_manager.create_context(label="PLP Service Result")
+        result_context.set_item(
+            TableData(
+                id="plp-parameters",
+                label="PLP Used Parameter",
+                headers={
+                    "value": "Value",
+                    "param": "Param"
+                },
+                entries=[
+                    {"param": param, "value": value}
+                    for param, value in data.items()
+                ]
+            )
+        )
+        result_context.set_item(
+            StatusData(
+                id="plp-result",
+                label="PLP Status",
+                status=[
+                    StatusEntry(
+                        progress=0,
+                        description="Initiating calculations"
+                    )
+                ]
+            )
+        )
         self._executor.submit(
             run_prope_design,
-            result_id,
+            result_context,
             src_fa_path,
             src_indexed_fa_path,
             src_gtf_path,
-            deferred_result_path,
-            config
+            config,
         )
 
-        initial_deferred_result = write_deferred_status(
-            deferred_result_path,
-            result_id,
-            DeferredStatus(
-                progress=0,
-                description="Waiting for results"
-            )
-        )
-
-        return [
-            Result(
-                id="plp-parameters",
-                label="PLP Used Parameter",
-                content=TableData(
-                    headers={
-                        "value": "Value",
-                        "param": "Param"
-                    },
-                    entries=[
-                        {"param": param, "value": value}
-                        for param, value in data.items()
-                    ]
-                )
-            ),
-            Result(
-                id="plp-search",
-                label="PLP Search",
-                content=initial_deferred_result
-            )
-        ]
-
-    def get_deferred_result(self, result_id: str):
-        with get_id_lock(result_id):
-            try:
-                with open(self._get_deferred_result_path(result_id), "r") as f:
-                    data = json.load(f)
-                    return result_data_from_data(data)
-            except (FileNotFoundError, ValueError):
-                return None
+        return result_context.get_result()
 
     def _abs_genome_path(self, path: str):
         genome_root = os.path.dirname(self._genome_list_path)
@@ -407,10 +393,6 @@ class PLPAdapter:
             for g in genome_list
             if g.id == id
         )
-
-    def _get_deferred_result_path(self, result_id: str) -> str:
-        result_id = str(uuid.UUID(result_id))
-        return os.path.join(self._deferred_result_path, f"{result_id}.json")
 
     def _load_genome_list(self):
         try:
@@ -449,61 +431,45 @@ def extract_features(
     return plp.merge_regions_and_coverage(genes_of_interest, gtf_df)
 
 
-def write_deferred_status(deferred_result_path: str, result_id: str, status: DeferredStatus):
-    with get_id_lock(result_id):
-        current_result = None
-        if os.path.isfile(deferred_result_path):
-            with open(deferred_result_path, "r") as f:
-                data = json.load(f)
-                current_result = DeferredResult.from_data(data)
-        else:
-            current_result = DeferredResult(
-                id=result_id,
-                status=[]
-            )
-
-        current_result.status.append(status)
-
-        with open(deferred_result_path, "w") as f:
-            json.dump(asdict(current_result), f, indent=4)
-
-        return current_result
-
-
-def write_deferred_result(deferred_result_path: str, result_id: str, result: TableData | FileData | DeferredResult):
-    with get_id_lock(result_id):
-        with open(deferred_result_path, "w") as f:
-            json.dump(asdict(result), f, indent=4)
-
-
 def current_time():
     return datetime.now().timestamp()
 
 
 def run_prope_design(
-    result_id: str,
+    result_context: ResultContext,
     src_fa_path: str,
     src_indexed_fa_path: str,
     src_gtf_path: str,
-    deferred_result_path: str,
-    config: Config
+    config: Config,
 ):
+    status_entries = []
+
+    def _update_status(status: StatusEntry):
+        nonlocal status_entries
+        status_entries = [
+            *status_entries,
+            status,
+        ]
+        logger.warning(f"{status.progress}: {status.description}")
+        result_context.set_item(
+            StatusData(
+                id="plp-result",
+                status=status_entries
+            )
+        )
+
     try:
         start_time = current_time()
         with tempfile.TemporaryDirectory(prefix="plp-workdir") as workdir:
             with cwd_context(workdir):
-                write_deferred_status(
-                    deferred_result_path,
-                    result_id,
-                    DeferredStatus(
+                _update_status(
+                    StatusEntry(
                         progress=0,
                         description=f"config: {config}"
                     )
                 )
-                write_deferred_status(
-                    deferred_result_path,
-                    result_id,
-                    DeferredStatus(
+                _update_status(
+                    StatusEntry(
                         progress=0,
                         description=f"workdir: {workdir}"
                     )
@@ -511,10 +477,8 @@ def run_prope_design(
 
                 fa_path = os.path.join(workdir, f"{os.path.basename(src_fa_path)}")
                 os.symlink(src_fa_path, fa_path)
-                write_deferred_status(
-                    deferred_result_path,
-                    result_id,
-                    DeferredStatus(
+                _update_status(
+                    StatusEntry(
                         progress=0,
                         description=f"fa_path: {src_fa_path}, {fa_path}"
                     )
@@ -523,10 +487,8 @@ def run_prope_design(
                 if os.path.isfile(src_indexed_fa_path):
                     indexed_fa_path = os.path.join(workdir, f"{os.path.basename(src_indexed_fa_path)}")
                     os.symlink(src_indexed_fa_path, indexed_fa_path)
-                    write_deferred_status(
-                        deferred_result_path,
-                        result_id,
-                        DeferredStatus(
+                    _update_status(
+                        StatusEntry(
                             progress=0,
                             description=f"indexed_fa_path: {src_indexed_fa_path}, {indexed_fa_path}"
                         )
@@ -534,10 +496,8 @@ def run_prope_design(
 
                 gtf_path = os.path.join(workdir, f"{os.path.basename(src_gtf_path)}")
                 os.symlink(src_gtf_path, gtf_path)
-                write_deferred_status(
-                    deferred_result_path,
-                    result_id,
-                    DeferredStatus(
+                _update_status(
+                    StatusEntry(
                         progress=0,
                         description=f"gtf_path: {src_gtf_path}, {gtf_path}"
                     )
@@ -556,10 +516,8 @@ def run_prope_design(
                     gene_feature=config.gene_feature
                 )
                 extracted_features.to_csv(extracted_features_output_path, sep='\t', index=False)
-                write_deferred_status(
-                    deferred_result_path,
-                    result_id,
-                    DeferredStatus(
+                _update_status(
+                    StatusEntry(
                         progress=10,
                         description=f"extracted_features: {current_time() - start_time}"
                     )
@@ -570,10 +528,8 @@ def run_prope_design(
                     output_file=transcriptome_output_path,
                     fasta_file=fa_path,
                 )
-                write_deferred_status(
-                    deferred_result_path,
-                    result_id,
-                    DeferredStatus(
+                _update_status(
+                    StatusEntry(
                         progress=20,
                         description=f"extract_mrna: {current_time() - start_time}"
                     )
@@ -587,10 +543,8 @@ def run_prope_design(
                     identifier_type=config.identifier_type,
                     regions_file=regions_output_path
                 )
-                write_deferred_status(
-                    deferred_result_path,
-                    result_id,
-                    DeferredStatus(
+                _update_status(
+                    StatusEntry(
                         progress=40,
                         description=f"extract_sequences: {current_time() - start_time}"
                     )
@@ -613,10 +567,8 @@ def run_prope_design(
                     filter_ligation_junction=config.filter_ligation_junction,
                     off_target_output=config.off_target_output
                 )
-                write_deferred_status(
-                    deferred_result_path,
-                    result_id,
-                    DeferredStatus(
+                _update_status(
+                    StatusEntry(
                         progress=100,
                         description=f"find_targets: {current_time() - start_time}"
                     )
@@ -627,20 +579,18 @@ def run_prope_design(
                     for header in targets_df.columns.values
                 }
                 entries = [entry for entry in targets_df.to_dict(orient="records")]
-                write_deferred_result(
-                    deferred_result_path,
-                    result_id,
+                result_context.set_item(
                     TableData(
+                        id="plp-result",
+                        label="PLP Result",
                         headers=headers,
                         entries=entries,
                     )
                 )
 
     except Exception as e:
-        write_deferred_status(
-            deferred_result_path,
-            result_id,
-            DeferredStatus(
+        _update_status(
+            StatusEntry(
                 progress=100,
                 description=f"Search failed: {e}: {current_time() - start_time}"
             )
@@ -748,5 +698,4 @@ def find_targets(
 def create_adapter():
     return PLPAdapter(
         genome_list_path=GENOME_LIST_PATH,
-        deferred_result_path=DEFERRED_RESULT_PATH,
     )

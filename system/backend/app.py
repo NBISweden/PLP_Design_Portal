@@ -8,7 +8,7 @@ from flask import (
 import os
 import logging
 from flask_compress import Compress  # type: ignore
-from adapters.mock_adapter import create_adapter
+from adapters.plp_adapter import create_adapter
 from adapters.result_manager import ResultManager
 
 
