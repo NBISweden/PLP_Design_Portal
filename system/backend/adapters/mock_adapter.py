@@ -11,6 +11,7 @@ from .result_data import (
 import json
 import os
 import random
+import uuid
 
 
 class MockAdapter:
@@ -48,12 +49,13 @@ class MockAdapter:
     }
 
     def run(self, data, result_manager) -> Result | DeferredResult | ErrorResult:
+        unique_id = str(uuid.uuid4())
         self._last_data = data
         field_ids = [field["id"] for field in self._fields]
-        result_choice = random.choice(["error"])
+        result_choice = random.choice(["error", "success", "deferred"])
         error_result = ErrorResult(
             label="Error",
-            id="error",
+            id=unique_id,
             errors=[
                 *[
                     FieldError(
@@ -66,7 +68,7 @@ class MockAdapter:
             ]
         )
         success_result = Result(
-            id="mock-search",
+            id=unique_id,
             label="Mock Search",
             items=[
                 TableData(
