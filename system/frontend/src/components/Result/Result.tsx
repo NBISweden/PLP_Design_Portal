@@ -35,6 +35,16 @@ function ResultEntry(props: BasicContent) {
     switch(props.type) {
         case "table":
             return <TableView headers={props.headers} entries={props.entries} name={props.label}/>
+        case "status":
+            const headers = {
+                progress: "Progress",
+                description: "Description",
+            }
+            const entries = props.status.map<{[x: string]: string}>(s => ({
+                "progress": s.progress.toString(),
+                "description": s.description
+            }))
+            return <TableView headers={headers} entries={entries} name={props.label}/>
         default:
             return JSON.stringify(props)
     }

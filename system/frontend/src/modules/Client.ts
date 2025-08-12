@@ -154,7 +154,12 @@ export type TableContent = Entry & {
     entries: {[x: string]: string}[]
 }
 
-export type BasicContent = TableContent;
+export type StatusContent = Entry & {
+    type: "status",
+    status: {progress: number, description: string}[]
+}
+
+export type BasicContent = TableContent | StatusContent;
 
 export const ClientContext = React.createContext<ClientAPI<BasicContent>>({
     id: "none",
