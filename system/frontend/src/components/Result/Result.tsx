@@ -34,7 +34,7 @@ export function Result() {
 function ResultEntry(props: BasicContent) {
     switch(props.type) {
         case "table":
-            return <TableView headers={props.headers} entries={props.entries} name={props.label}/>
+            return <TableView headers={props.headers} entries={props.entries} name={props.label || props.id}/>
         case "status":
             const headers = {
                 progress: "Progress",
@@ -44,7 +44,7 @@ function ResultEntry(props: BasicContent) {
                 "progress": s.progress.toString(),
                 "description": s.description
             }))
-            return <TableView headers={headers} entries={entries} name={props.label}/>
+            return <TableView headers={headers} entries={entries} name={props.label || props.id}/>
         default:
             return JSON.stringify(props)
     }
