@@ -11,8 +11,7 @@ export type Description = {
 
 export type Entry = {
     id: string;
-    label: string;
-}
+} & Description;
 
 export interface Query<T> {
     get(): Promise<T>;
@@ -68,7 +67,7 @@ export type HttpClientConfig = {
     layout?: DataOrReference<FormLayout>,
 }
 
-export class HttpQuery<T extends Entry> implements Query<Result<T>> {
+export class HttpQuery<T extends Entry> implements Query<Result<T> | ErrorResult> {
     private _client: HttpClientAPI<T>;
     private _values: Record<string, string>;
     constructor(client: HttpClientAPI<T>, values: Record<string, string>) {
@@ -77,7 +76,7 @@ export class HttpQuery<T extends Entry> implements Query<Result<T>> {
     }
 
     get() {
-        return this._client.execute(this._values)
+        return this._client.execute(this._values);
     }
 }
 
@@ -118,7 +117,7 @@ export class HttpClientAPI<T extends Entry> implements ClientAPI<T>{
     async execute(values: Record<string, string>): Promise<Result<T>> {
         const url = new URL(this._rootUrl, window.location.href);
         url.search = (new URLSearchParams(values)).toString();
-        return await (await fetch(url.toString())).json()
+        return await (await fetch(url.toString())).json();
     }
 
     static async fromConfig<T extends Entry>(config: HttpClientConfig): Promise<HttpClientAPI<T>> {
@@ -155,11 +154,7 @@ export type TableContent = Entry & {
     entries: {[x: string]: string}[]
 }
 
-export type ErrorContent = Entry & {
-    type: "error";
-}
-
-export type BasicContent = TableContent | ErrorContent
+export type BasicContent = TableContent;
 
 export const ClientContext = React.createContext<ClientAPI<BasicContent>>({
     id: "none",

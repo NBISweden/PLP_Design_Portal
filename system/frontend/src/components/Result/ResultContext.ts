@@ -1,9 +1,9 @@
 import React from "react";
-import { Result, BasicContent, ErrorContent, Entry } from "../../modules/Client"
+import { Result, BasicContent, Entry } from "../../modules/Client"
 
 
 interface ResultManager<T extends Entry> {
-    addResult(result: Result<T | ErrorContent>, namespace?: string): {id: string};
+    addResult(result: Result<T>): {id: string};
     getResult(ref: {id: string}): {id: string; result: Result<T>};
     results(): {id: string}[];
 }
@@ -13,24 +13,21 @@ export type ResultCache<T extends Entry> = {
 }
 
 export function useCachingResultManager<T  extends Entry>(
-    initialResults: ResultCache<T | ErrorContent> = {},
-    initialEnumerator: number = 0,
-    onChange?: (results: ResultCache<T | ErrorContent>, enumerator: number) => void 
+    initialResults: ResultCache<T> = {},
+    onChange?: (results: ResultCache<T>) => void 
 ) {
-    const [results, setResults] = React.useState<ResultCache<T | ErrorContent>>(initialResults)
-    const [enumerator, setEnumerator] = React.useState<number>(initialEnumerator);
+    const [results, setResults] = React.useState<ResultCache<T>>(initialResults)
     const timerRefs = React.useRef<{[x: string]: number | null | "updating"}>({});
 
     React.useEffect(() => {
         if (onChange) {
-            onChange(results, enumerator);
+            onChange(results);
         }
-    }, [onChange, results, enumerator])
+    }, [onChange, results])
 
     return {
-        addResult(result: Result<T | ErrorContent>, namespace: string ="result"): {id: string} {
-            setEnumerator(enumerator + 1)
-            const id: string = `${namespace}-${enumerator}`
+        addResult(result: Result<T>): {id: string} {
+            const id: string = result.id;
             setResults((r) => ({
                 ...r,
                 [id]: {
@@ -39,16 +36,16 @@ export function useCachingResultManager<T  extends Entry>(
             }));
             return {id};
         },
-        getResult(ref: {id: string}): {id: string; result: Result<T | ErrorContent>} {
+        getResult(ref: {id: string}): {id: string; result: Result<T>} {
             const result = results[ref.id];
             const updateResults = async () => {
                 timerRefs.current[ref.id] = "updating"
                 try {
                     const deferredUrl = "url" in result.result ? result.result.url : null;
                     const updatedResults = await (
-                        deferredUrl ? await fetchJson<Result<T | ErrorContent>>(deferredUrl) : Promise.resolve(result.result)
+                        deferredUrl ? await fetchJson<Result<T>>(deferredUrl) : Promise.resolve(result.result)
                     )
-                    
+
                     setResults((r) => ({
                         ...r,
                         [ref.id]: {

@@ -1,6 +1,6 @@
 import { FormEventHandler, useState } from "react";
 import { useFields } from "../Fields";
-import { useClient, Result, ErrorContent } from "../../modules/Client";
+import { useClient} from "../../modules/Client";
 import { ErrorContext, useStaticErrorManager } from "../../modules/ErrorContext";
 import { Form } from "../Form/Form";
 import { useResults } from "../Result/ResultContext";
@@ -40,20 +40,18 @@ export function Service() {
                 )
                 setIsWaiting(false);
             } else {
-                const resultRef = results.addResult(result, client.id);
+                const resultRef = results.addResult(result);
                 navigate(`/results/${resultRef.id}`);
             }
         }).catch((e) => {
-            const errorResult: Result<ErrorContent> = [
+            setErrors([
                 {
-                    id: "error",
-                    label: "Error",
+                    id: "query-failed",
                     description: e.toString(),
-                    content: {type: "error"},
+                    groupId: null,
                 }
-            ]
-            const resultRef = results.addResult(errorResult, client.id);
-            navigate(`/results/${resultRef.id}`);
+            ]);
+            setIsWaiting(false);
         });
 
     }

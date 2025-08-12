@@ -9,15 +9,13 @@ export function Main(props: {resultDataId: string}) {
       const rawData = localStorage.getItem(resultDataId);
       return rawData ? JSON.parse(rawData) : {
         results: {},
-        enumerator: 0
       }
     }, [resultDataId]);
     const onCacheUpdated = useMemo(
       () => {
-        return (results: ResultCache<BasicContent>, enumerator: number) => {
+        return (results: ResultCache<BasicContent>) => {
           const rawData = JSON.stringify({
             results,
-            enumerator
           });
           localStorage.setItem(resultDataId, rawData);
         }
@@ -26,7 +24,6 @@ export function Main(props: {resultDataId: string}) {
     );
     const resultManager = useCachingResultManager<BasicContent>(
       initialData.results,
-      initialData.enumerator,
       onCacheUpdated,
     );
     return (
