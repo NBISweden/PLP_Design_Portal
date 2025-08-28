@@ -1,99 +1,118 @@
 import React from "react";
-import { Result, BasicContent, Entry } from "../../modules/Client"
+import { Result, BasicContent, Entry, ClientAPI } from "../../modules/Client"
 
-
-interface ResultManager<T extends Entry> {
-    addResult(result: Result<T>): {id: string};
-    getResult(ref: {id: string}): {id: string; result: Result<T>};
-    results(): {id: string}[];
+export type MissingResult = {
+    id: string;
+    type: "missing";
+    message?: string;
 }
 
-export type ResultCache<T extends Entry> = {
-    [id: string]: {result: Result<T>}
+export interface ResultSource<T extends Entry> {
+    setResult(result: Result<T>): void;
+    getResult(ref: {id: string}): Result<T> | MissingResult;
+    get results(): {id: string}[];
 }
 
-export function useCachingResultManager<T  extends Entry>(
-    initialResults: ResultCache<T> = {},
-    onChange?: (results: ResultCache<T>) => void 
-) {
-    const [results, setResults] = React.useState<ResultCache<T>>(initialResults)
-    const timerRefs = React.useRef<{[x: string]: number | null | "updating"}>({});
-
-    React.useEffect(() => {
-        if (onChange) {
-            onChange(results);
+export class LocalStorageResultSource<T extends Entry> implements ResultSource<T> {
+    private _namespace?: string;
+    constructor(namespace?: string) {
+        this._namespace = namespace
+    }
+    setResult(result: Result<T>) {
+        const rawData = JSON.stringify(result);
+        localStorage.setItem(this._getId(result.id), rawData);
+    }
+    getResult({id}: {id: string}) {
+        const rawData = localStorage.getItem(this._getId(id))
+        return rawData ? JSON.parse(rawData) : {
+            id: id,
+            type: "missing"
         }
-    }, [onChange, results])
+    }
+    get results() {
+        return Object.keys(localStorage).map(key => ({id: key}))
+    }
+
+    private _getId(id: string) {
+        return this._namespace ? `${this._namespace}-${id}` : id
+    }
+}
+
+export function useCachingResultManager<T extends Entry>(
+    cache: ResultSource<T>,
+    client: ClientAPI<T>
+) {
+    const setUpdate = React.useState<number>(1)[1];
+    const timerRefs = React.useRef<{[x: string]: number | null | "updating"}>({});
+    const updateRotation = 1000;
 
     return {
-        addResult(result: Result<T>): {id: string} {
+        setResult(result: Result<T>): {id: string} {
             const id: string = result.id;
-            setResults((r) => ({
-                ...r,
-                [id]: {
-                    result: result
-                }
-            }));
             return {id};
         },
-        getResult(ref: {id: string}): {id: string; result: Result<T>} {
-            const result = results[ref.id];
-            const updateResults = async () => {
-                timerRefs.current[ref.id] = "updating"
-                try {
-                    const deferredUrl = "url" in result.result ? result.result.url : null;
-                    const updatedResults = await (
-                        deferredUrl ? await fetchJson<Result<T>>(deferredUrl) : Promise.resolve(result.result)
-                    )
-
-                    setResults((r) => ({
-                        ...r,
-                        [ref.id]: {
-                            result: updatedResults
-                        }
-                    }))
-                } catch (e) {
-                    console.log(e)
+        getResult(ref: {id: string}): Result<T> | MissingResult {
+            const result = cache.getResult({id: ref.id});
+            if (!("type" in result)) {
+                const updateResults = async () => {
+                    timerRefs.current[ref.id] = "updating"
+                    try {
+                        const deferredUrl = "url" in result ? result.url : null;
+                        const updatedResults = await (
+                            deferredUrl ? client.result(ref).get() : Promise.resolve(result)
+                        )
+                        cache.setResult(updatedResults);
+                        setUpdate((v) => v + 1 % updateRotation);
+                    } catch (e) {
+                        console.log(e)
+                    }
+                    timerRefs.current[ref.id] = null
                 }
-                timerRefs.current[ref.id] = null
-            }
-            if ("refresh_rate" in result.result) {
-                const refreshRate = result.result.refresh_rate || 5000;
-                const timerRef = timerRefs.current[ref.id]
-                if (typeof(timerRef) === "number") {
-                    clearTimeout(timerRef);
+                if ("refresh_rate" in result) {
+                    const refreshRate = result.refresh_rate || 5000;
+                    const timerRef = timerRefs.current[ref.id]
+                    if (typeof(timerRef) === "number") {
+                        clearTimeout(timerRef);
+                    }
+                    timerRefs.current[ref.id] = (
+                        timerRef === "updating"
+                        ? null
+                        : setTimeout(updateResults, refreshRate)
+                    );
                 }
-                timerRefs.current[ref.id] = (
-                    timerRef === "updating"
-                    ? null
-                    : setTimeout(updateResults, refreshRate)
-                );
+            } else {
+                const fetchResult = async () => {
+                    timerRefs.current[ref.id] = "updating"
+                    try {
+                        const updatedResults = await client.result(ref).get();
+                        cache.setResult(updatedResults);
+                        setUpdate((v) => v + 1 % updateRotation);
+                    } catch (e) {
+                        console.log(e)
+                    }
+                    timerRefs.current[ref.id] = null
+                }
+                fetchResult();
             }
             return {
+                ...result,
                 id: ref.id,
-                ...result
             };
         },
-        results(): {id: string}[] {
-            return Object.keys(results).map(id => ({id}));
+        get results() {
+            return cache.results;
         }
     }
 }
 
-async function fetchJson<T>(url: string): Promise<T> {
-    return await (await fetch(url)).json()
-}
-
-export const ResultContext = React.createContext<ResultManager<BasicContent>>({
-    addResult(): {id: string} {
+export const ResultContext = React.createContext<ResultSource<BasicContent>>({
+    setResult(): {id: string} {
         throw new Error("Not implemented");
     },
-    getResult(): {id: string; result: Result<BasicContent>} {
+    getResult(): Result<BasicContent> {
         throw new Error("Not implemented");
     },
-    results(): {id: string}[] {
-        return []
-    }
+    results: []
 });
 
 export function useResults() {

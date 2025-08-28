@@ -1,17 +1,17 @@
 import React from "react";
 
-export type Error = {
+export type ErrorMessage = {
     id: string;
     description?: string;
 }
 
 export type GroupedError = {
     groupId: string | null;
-} & Error
+} & ErrorMessage
 
 export interface ErrorManager {
-    getFieldErrors(id: string): Error[];
-    getFormErrors(id?: string): Error[];
+    getFieldErrors(id: string): ErrorMessage[];
+    getFormErrors(id?: string): ErrorMessage[];
 }
 
 export const ErrorContext = React.createContext<ErrorManager>({
@@ -41,12 +41,12 @@ export class StaticErrorManager {
     }
 }
 
-export function useFieldErrors(id: string): Error[] {
+export function useFieldErrors(id: string): ErrorMessage[] {
     const ctx = React.useContext(ErrorContext);
     return ctx.getFieldErrors(id);
 }
 
-export function useFormErrors(): Error[] {
+export function useFormErrors(): ErrorMessage[] {
     const ctx = React.useContext(ErrorContext);
     return ctx.getFormErrors();
 }

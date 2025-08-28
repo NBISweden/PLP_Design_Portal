@@ -11,6 +11,17 @@ import { useTranslation } from "react-i18next";
 import "./App.css";
 import {Footer} from "../Footer/Footer";
 
+const router = createBrowserRouter([
+    {
+        path: "/",
+        element: <Service />,
+    },
+    {
+        path: "/results/:resultId",
+        element: <Result />,
+    },
+]);
+
 
 export function App() {
     const {t} = useTranslation();
@@ -21,16 +32,7 @@ export function App() {
         href: link.href,
         icon: link.icon,
     }))
-    const router = createBrowserRouter([
-        {
-            path: "/",
-            element: <Service />,
-        },
-        {
-            path: "/results/:resultId",
-            element: <Result />,
-        },
-    ]);
+
     useEffect(() => {
         document.title = title;
     }, [title])

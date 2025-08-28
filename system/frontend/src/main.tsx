@@ -22,7 +22,7 @@ async function main() {
       <StrictMode>
         <ClientContext.Provider value={clientAPI}>
           <FieldContext.Provider value={clientAPI.fields}>
-            <Main resultDataId={"result-cache"}/>
+            <Main resultNamespace={"result-cache"}/>
           </FieldContext.Provider>
         </ClientContext.Provider>
       </StrictMode>,

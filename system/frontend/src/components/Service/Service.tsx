@@ -40,8 +40,8 @@ export function Service() {
                 )
                 setIsWaiting(false);
             } else {
-                const resultRef = results.addResult(result);
-                navigate(`/results/${resultRef.id}`);
+                results.setResult(result);
+                navigate(`/results/${result.id}`);
             }
         }).catch((e) => {
             setErrors([

@@ -3,7 +3,7 @@ from flask import (
     jsonify,
     send_file,
     request,
-    abort,
+    make_response,
 )
 import os
 import logging
@@ -18,10 +18,12 @@ def parse_query(args: dict[str, str]):
         for (key, value) in args.items()
     }
 
+def make_error(message):
+    return make_response(jsonify({"error": message}), 404)
 
 def create_app():
     result_manager = ResultManager(
-        url_format="/deferred/{id}",
+        url_format="/api/deferred/{id}",
         result_root="/tmp"
     )
     adapter = create_adapter()
@@ -47,18 +49,23 @@ def create_app():
 
         return jsonify(result.model_dump())
 
-    @app.route('/deferred/<result_id>')
+    @app.route('/api/deferred/<result_id>')
     def deferred_result(result_id: str):
-        result_context = result_manager.get_context(id=result_id)
-        if result_context is None:
-            abort(404)
-        else:
-            return jsonify(result_context.get_result().model_dump())
+        try:
+            result_context = result_manager.get_context(id=result_id)
+            if result_context is None:
+                return make_error(f"The result could not be found for: {result_id}")
+            else:
+                return jsonify(result_context.get_result().model_dump())
+        except ValueError:
+            return make_error(f"The result could not be found for: {result_id}")
 
     @app.route('/config.json')
     def config():
         return jsonify({
-            "rootUrl": f"/api/{adapter.name}",
+            "rootUrl": "/api/",
+            "adapterUrl": f"/api/{adapter.name}",
+            "resultUrl": "/api/deferred/",
             "id": "plp",
             "language": "en",
             "links": adapter.links,

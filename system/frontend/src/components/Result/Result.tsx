@@ -16,8 +16,11 @@ export function Result() {
             <div className="container">
                 <div className="box">
                     <h2 className="title is-size-4-mobile has-text-centered">{t("results.title")}</h2>
-                    {result && "items" in result.result ? (
-                        result.result.items.map((entry, index) => (
+                    {result && "type" in result ? (
+                        <div className="result-container">No result available for id {result.id}</div>
+                    ) : <></>} 
+                    {result && "items" in result ? (
+                        result.items.map((entry, index) => (
                             <div key={index} className="result-container">
                                 <h2 className="title is-size-5-mobile is-size-4 mt-4 has-text-weight-normal">{entry.label}</h2>
                                 <ResultEntry {...entry}/>
@@ -35,7 +38,7 @@ function ResultEntry(props: BasicContent) {
     switch(props.type) {
         case "table":
             return <TableView headers={props.headers} entries={props.entries} name={props.label || props.id}/>
-        case "status":
+        case "status": {
             const headers = {
                 progress: "Progress",
                 description: "Description",
@@ -45,6 +48,7 @@ function ResultEntry(props: BasicContent) {
                 "description": s.description
             }))
             return <TableView headers={headers} entries={entries} name={props.label || props.id}/>
+        }
         default:
             return JSON.stringify(props)
     }

@@ -1,6 +1,6 @@
 import React from "react";
 import { FieldDef, FieldManager, StaticFieldManager } from "../components/Fields"
-import { Error } from "./ErrorContext"
+import { ErrorMessage } from "./ErrorContext"
 import { FormLayout } from "../components/Form/Form"
 import { DataOrReference, fetchReference } from "./utils"
 
@@ -32,13 +32,14 @@ export type Result<T extends Entry> = (
 
 export type FieldError = {
     fieldId: string;
-} & Error;
+} & ErrorMessage;
 
-export type ErrorResult = {errors: (Error | FieldError)[]};
+export type ErrorResult = {errors: (ErrorMessage | FieldError)[]};
 
 export interface ClientAPI<T extends Entry> {
     id: string;
     query(values: Record<string, string>): Query<Result<T> | ErrorResult>;
+    result(ref: {id: string}): Query<Result<T>>;
     translation: TranslationResource;
     fields: FieldManager;
     layout: FormLayout;
@@ -59,6 +60,8 @@ type TranslationResource = {[lang: string]: {translation: Translation}}
 
 export type HttpClientConfig = {
     rootUrl: string,
+    adapterUrl: string,
+    resultUrl: string,
     id: string,
     language: string,
     links?: Link[],
@@ -67,35 +70,33 @@ export type HttpClientConfig = {
     layout?: DataOrReference<FormLayout>,
 }
 
-export class HttpQuery<T extends Entry> implements Query<Result<T> | ErrorResult> {
-    private _client: HttpClientAPI<T>;
-    private _values: Record<string, string>;
-    constructor(client: HttpClientAPI<T>, values: Record<string, string>) {
-        this._client = client;
-        this._values = values;
-    }
-
-    get() {
-        return this._client.execute(this._values);
-    }
-}
-
 export class HttpClientAPI<T extends Entry> implements ClientAPI<T>{
     public readonly id: string;
-    private _rootUrl: string;
+    private _adapterUrl: string;
+    private _resultUrl: string;
     private _translation: TranslationResource = {};
     private _layout: FormLayout = [];
     private _fields: FieldManager = new StaticFieldManager([]);
     private _links: Link[] = [];
 
-
-    constructor(id: string, rootUrl: string) {
+    constructor(id: string, adapterUrl: string, resultUrl: string) {
         this.id = id;
-        this._rootUrl = rootUrl;
+        this._adapterUrl = adapterUrl;
+        this._resultUrl = resultUrl;
     }
 
     query(values: Record<string, string>): Query<Result<T>> {
-        return new HttpQuery(this, values);
+        const execute = () => this.execute(values);
+        return {
+            get: execute,
+        }
+    }
+
+    result(ref: {id: string}): Query<Result<T>> {
+        const fetchResult = () => this.fetchResult(ref);
+        return {
+            get: fetchResult,
+        }
     }
 
     get translation() {
@@ -115,13 +116,22 @@ export class HttpClientAPI<T extends Entry> implements ClientAPI<T>{
     }
 
     async execute(values: Record<string, string>): Promise<Result<T>> {
-        const url = new URL(this._rootUrl, window.location.href);
+        const url = new URL(this._adapterUrl, window.location.href);
         url.search = (new URLSearchParams(values)).toString();
         return await (await fetch(url.toString())).json();
     }
 
+    async fetchResult(ref: {id: string}): Promise<Result<T>> {
+        const url = new URL(`${this._resultUrl}${ref.id}`, window.location.href);
+        const response = await fetch(url.toString());
+        if (response.ok) {
+            return await response.json();
+        }
+        throw new Error(`Unable to fetch result '${ref.id}': Status: ${response.status}: ${response.statusText}`)
+    }
+
     static async fromConfig<T extends Entry>(config: HttpClientConfig): Promise<HttpClientAPI<T>> {
-        const client = new HttpClientAPI<T>(config.id, config.rootUrl);
+        const client = new HttpClientAPI<T>(config.id, config.adapterUrl, config.resultUrl);
         const translationRef = config.translation;
         const fieldsRef = config.fields;
         const layoutRef = config.layout;
@@ -167,6 +177,18 @@ export const ClientContext = React.createContext<ClientAPI<BasicContent>>({
         return {
             get() {
                 console.log(values);
+                return Promise.resolve({
+                    label: "Result",
+                    id: "result",
+                    items: []
+                });
+            }
+        }
+    },
+    result(ref) {
+        return {
+            get() {
+                console.log(ref);
                 return Promise.resolve({
                     label: "Result",
                     id: "result",
