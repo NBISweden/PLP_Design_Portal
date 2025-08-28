@@ -80,8 +80,14 @@ li a {
 }
 
 main {
+    display: flex;
+    flex-direction: column;
     flex-grow: 1;
     flex-shrink: 0;
+}
+
+main > .section {
+    flex-grow: 1;
 }
 
 .footer {

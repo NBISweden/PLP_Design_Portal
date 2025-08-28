@@ -6,10 +6,14 @@
     background-repeat: no-repeat;
 }
 
-.header-nav.active {
+.header-nav {
     background-color: rgba(white, 0);
     border-radius: 1rem;
     transition: background-color 0.1s;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    text-align: center;
 }
 
 .header-nav.active {
