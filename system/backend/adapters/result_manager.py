@@ -79,7 +79,9 @@ class ResultManager:
 
     def create_context(self, label: str):
         id = self._create_id()
-        return self.get_context(id)
+        context = self.get_context(id)
+        context.set_label(label)
+        return context
 
     def get_context(self, id: str):
         path = self._get_result_path(id)

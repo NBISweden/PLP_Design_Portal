@@ -337,7 +337,8 @@ class PLPAdapter:
         src_indexed_fa_path = f"{src_fa_path}.fai"
         src_gtf_path = self._abs_genome_path(genome.gtf_path)
 
-        result_context = result_manager.create_context(label="PLP Service Result")
+        date = datetime.now().isoformat()
+        result_context = result_manager.create_context(label=f"PLP Service Result: {date}")
         result_context.set_item(
             TableData(
                 id="plp-parameters",
