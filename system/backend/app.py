@@ -25,6 +25,7 @@ def make_error(message):
 
 
 def create_app():
+    wait_for_results_iterations = 1
     result_manager = ResultManager(
         url_format="/api/deferred/{id}",
         result_root="/tmp"
@@ -50,10 +51,10 @@ def create_app():
         data = parse_query(request.args)
         result = adapter.run(data, result_manager)
         result_context = result_manager.get_context(id=result.id)
-        for i in range(3):
-            result = result_context.get_result()
+        for _i in range(wait_for_results_iterations):
             if hasattr(result, "refresh_rate"):
                 time.sleep(result.refresh_rate / 1000)
+                result = result_context.get_result()
             else:
                 return jsonify(result.model_dump())
 

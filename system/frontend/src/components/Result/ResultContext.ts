@@ -50,6 +50,7 @@ export function useCachingResultManager<T extends Entry>(
     return {
         setResult(result: Result<T>): {id: string} {
             const id: string = result.id;
+            cache.setResult(result);
             return {id};
         },
         getResult(ref: {id: string}): Result<T> | MissingResult {

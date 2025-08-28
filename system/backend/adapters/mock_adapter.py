@@ -12,6 +12,7 @@ import json
 import os
 import random
 import uuid
+from datetime import datetime
 
 
 class MockAdapter:
@@ -67,9 +68,11 @@ class MockAdapter:
                 Error(id="general-error")
             ]
         )
+
+        timestamp = datetime.now().isoformat()
         success_result = Result(
             id=unique_id,
-            label="Mock Search",
+            label=f"Mock Search: {timestamp}",
             items=[
                 TableData(
                     label="Mock table",
@@ -85,7 +88,7 @@ class MockAdapter:
                 )
             ]
         )
-        result_context = result_manager.create_context(label="Deferred result")
+        result_context = result_manager.create_context(label=f"Deferred result: {timestamp}")
         result_context.set_item(
             StatusData(
                 id="status",
