@@ -5,8 +5,10 @@ import { ErrorContext, useStaticErrorManager } from "../../modules/ErrorContext"
 import { Form } from "../Form/Form";
 import { useResults } from "../Result/ResultContext";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export function Service() {
+    const {t} = useTranslation()
     const [errorManager, setErrors] = useStaticErrorManager();
     const [isWaiting, setIsWaiting] = useState<boolean>(false)
     const fieldDefs = useFields();
@@ -58,7 +60,7 @@ export function Service() {
     return (
         <section className="section has-background-custom-grey-light">
             <div className="container">
-                <h2 className="title is-size-4-mobile has-text-centered">Input</h2>
+                <h2 className="title is-size-4-mobile has-text-centered">{t("service.title")}</h2>
                 <div className="columns is-centered">
                     <div className="column is-two-thirds">
                         <ErrorContext.Provider value={errorManager}>
