@@ -17,7 +17,7 @@ export interface Query<T> {
     get(): Promise<T>;
 }
 
-export type DeferredResult = {
+export type DeferredResult = Description & {
     id: string;
     url: string;
     refresh_rate: number;

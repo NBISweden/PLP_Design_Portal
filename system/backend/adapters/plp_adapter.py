@@ -204,7 +204,8 @@ class PLPAdapter:
                 "translation": {
                     "results": {
                         "title": "Results",
-                        "download_file": "Download '{{name}}'"
+                        "download_file": "Download '{{name}}'",
+                        "default_title": "Result '{{id}}'",
                     },
                     "form": {
                         "groups": {

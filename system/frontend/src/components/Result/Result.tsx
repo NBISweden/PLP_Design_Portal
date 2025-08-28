@@ -1,8 +1,8 @@
 import './Result.css'
 import { useTranslation } from "react-i18next";
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useResults } from "../Result/ResultContext";
-import { BasicContent } from "../../modules/Client";
+import { BasicContent, Result as ResultValue } from "../../modules/Client";
 
 
 export function Result() {
@@ -33,6 +33,27 @@ export function Result() {
     );
 }
 
+export function ResultList() {
+    const navigate = useNavigate();
+    const {t} = useTranslation();
+    const results = useResults();
+    const resultList = results.results.map(ref => results.getResult(ref)).filter((r): r is ResultValue<BasicContent> => !("type" in r));
+    return (
+        <section className="section has-background-custom-grey-light">
+            <div className="container">
+                <div className="box">
+                    {resultList.map(result => (
+                        <div key={result.id} className="result-container">
+                            <h2 className="title is-size-5-mobile is-size-4 mt-4 has-text-weight-normal">{result.label || t("results.default_title", {id: result.id})}</h2>
+                            <p>{result.description}</p>
+                            <button type="submit" onClick={() => navigate(`/results/${result.id}`)} className="button is-secondary-custom">View result for {result.label || result.id}</button>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </section>
+    )
+}
 
 function ResultEntry(props: BasicContent) {
     switch(props.type) {

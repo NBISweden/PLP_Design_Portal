@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Header, MenuItem } from "../Header/Header";
 import { Service } from "../Service/Service";
-import { Result } from "../Result/Result";
+import { Result, ResultList } from "../Result/Result";
 import { useClient } from "../../modules/Client";
 import {
     createBrowserRouter,
@@ -15,6 +15,10 @@ const router = createBrowserRouter([
     {
         path: "/",
         element: <Service />,
+    },
+    {
+        path: "/results/",
+        element: <ResultList />,
     },
     {
         path: "/results/:resultId",

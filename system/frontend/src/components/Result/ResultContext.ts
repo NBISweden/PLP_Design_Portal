@@ -16,7 +16,7 @@ export interface ResultSource<T extends Entry> {
 export class LocalStorageResultSource<T extends Entry> implements ResultSource<T> {
     private _namespace?: string;
     constructor(namespace?: string) {
-        this._namespace = namespace
+        this._namespace = namespace || "result-cache";
     }
     setResult(result: Result<T>) {
         const rawData = JSON.stringify(result);
@@ -30,11 +30,12 @@ export class LocalStorageResultSource<T extends Entry> implements ResultSource<T
         }
     }
     get results() {
-        return Object.keys(localStorage).map(key => ({id: key}))
+        const refBase = this._getId("");
+        return Object.keys(localStorage).filter(key => key.startsWith(refBase)).map(key => ({id: key.replace(refBase, "")}))
     }
 
     private _getId(id: string) {
-        return this._namespace ? `${this._namespace}-${id}` : id
+        return `${this._namespace}-${id}`;
     }
 }
 
