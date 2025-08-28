@@ -1,6 +1,6 @@
 import uuid
 import os
-from pydantic import BaseModel, PositiveInt, TypeAdapter
+from pydantic import BaseModel, PositiveInt
 from .result_data import (
     StatusData,
     TableData,
@@ -10,9 +10,6 @@ from .result_data import (
 )
 from multiprocessing import Lock
 import functools
-
-
-result_type_adapter = TypeAdapter(Result | DeferredResult)
 
 
 @functools.cache

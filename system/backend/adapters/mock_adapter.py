@@ -72,6 +72,7 @@ class MockAdapter:
             label="Mock Search",
             items=[
                 TableData(
+                    label="Mock table",
                     id="data",
                     headers={
                         "value": "Value",
@@ -88,6 +89,7 @@ class MockAdapter:
         result_context.set_item(
             StatusData(
                 id="status",
+                label="Mock status",
                 status=[
                     StatusEntry(
                         progress=100,
@@ -98,7 +100,7 @@ class MockAdapter:
         )
         deferred_result = result_context.get_result()
 
-        result_selector: dict[str, list[Result] | ErrorResult] = {
+        result_selector: dict[str, Result | ErrorResult] = {
             "error": error_result,
             "success": success_result,
             "deferred": deferred_result

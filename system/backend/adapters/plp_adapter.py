@@ -17,7 +17,6 @@ import json
 import tempfile
 import logging
 import contextlib
-import uuid
 from datetime import datetime
 import functools
 
@@ -331,7 +330,6 @@ class PLPAdapter:
 
     def run(self, data, result_manager: ResultManager) -> Result | DeferredResult | ErrorResult:
         config = Config.from_data(data)
-        result_id = str(uuid.uuid4())
 
         genome = self._get_genome_ref(config.genome)
         src_fa_path = self._abs_genome_path(genome.fa_path)
@@ -442,7 +440,7 @@ def run_prope_design(
     src_gtf_path: str,
     config: Config,
 ):
-    status_entries = []
+    status_entries: list[StatusEntry] = []
 
     def _update_status(status: StatusEntry):
         nonlocal status_entries
@@ -453,6 +451,7 @@ def run_prope_design(
         logger.warning(f"{status.progress}: {status.description}")
         result_context.set_item(
             StatusData(
+                label="PLP Result Status",
                 id="plp-result",
                 status=status_entries
             )

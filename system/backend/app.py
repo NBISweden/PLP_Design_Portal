@@ -18,8 +18,10 @@ def parse_query(args: dict[str, str]):
         for (key, value) in args.items()
     }
 
+
 def make_error(message):
     return make_response(jsonify({"error": message}), 404)
+
 
 def create_app():
     result_manager = ResultManager(

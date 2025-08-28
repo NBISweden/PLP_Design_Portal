@@ -6,6 +6,7 @@ from typing import Literal
 
 class ResultData(BaseModel):
     id: str
+    label: str
 
     class Config:
         frozen = True
