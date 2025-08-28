@@ -6,6 +6,7 @@ from flask import (
     make_response,
 )
 import os
+import time
 import logging
 from flask_compress import Compress  # type: ignore
 from adapters.plp_adapter import create_adapter
@@ -14,7 +15,7 @@ from adapters.result_manager import ResultManager
 
 def parse_query(args: dict[str, str]):
     return {
-        key: str(value)
+        key: [str(value) for v in value] if isinstance(value, list) else str(value)
         for (key, value) in args.items()
     }
 
@@ -48,6 +49,13 @@ def create_app():
     def service():
         data = parse_query(request.args)
         result = adapter.run(data, result_manager)
+        result_context = result_manager.get_context(id=result.id)
+        for i in range(3):
+            result = result_context.get_result()
+            if hasattr(result, "refresh_rate"):
+                time.sleep(result.refresh_rate / 1000)
+            else:
+                return jsonify(result.model_dump())
 
         return jsonify(result.model_dump())
 
@@ -56,10 +64,12 @@ def create_app():
         try:
             result_context = result_manager.get_context(id=result_id)
             if result_context is None:
+                logger.info("Failed to get result: Result context not found")
                 return make_error(f"The result could not be found for: {result_id}")
             else:
                 return jsonify(result_context.get_result().model_dump())
-        except ValueError:
+        except ValueError as e:
+            logger.info(f"Failed to get result: {e}")
             return make_error(f"The result could not be found for: {result_id}")
 
     @app.route('/config.json')
