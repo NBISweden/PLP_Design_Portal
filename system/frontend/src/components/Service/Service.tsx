@@ -64,7 +64,7 @@ export function Service() {
                 <div className="columns is-centered">
                     <div className="column is-two-thirds">
                         <ErrorContext.Provider value={errorManager}>
-                            {!isWaiting ? <Form handleSubmit={handleSubmit} layout={client.layout}/> : "Waiting for result"}
+                            {!isWaiting ? <Form handleSubmit={handleSubmit} layout={client.layout}/> : t("service.waiting_for_results")}
                         </ErrorContext.Provider>
                     </div>
                 </div>

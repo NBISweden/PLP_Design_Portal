@@ -42,13 +42,14 @@ export function ResultList() {
         <section className="section has-background-custom-grey-light">
             <div className="container">
                 <div className="box">
-                    {resultList.map(result => (
+                    <h2 className="title is-size-4-mobile has-text-centered">{t("results.title")}</h2>
+                    {resultList.length > 0 ? resultList.map(result => (
                         <div key={result.id} className="result-container">
-                            <h2 className="title is-size-5-mobile is-size-4 mt-4 has-text-weight-normal">{result.label || t("results.default_title", {id: result.id})}</h2>
+                            <h3 className="title is-size-5-mobile is-size-4 mt-4 has-text-weight-normal">{result.label || t("results.default_title", {id: result.id})}</h3>
                             <p>{result.description}</p>
                             <button type="submit" onClick={() => navigate(`/results/${result.id}`)} className="button is-secondary-custom">View result for {result.label || result.id}</button>
                         </div>
-                    ))}
+                    )) : <p>{t("results.no_results")}</p>}
                 </div>
             </div>
         </section>

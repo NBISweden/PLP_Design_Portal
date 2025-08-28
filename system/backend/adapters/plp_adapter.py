@@ -206,6 +206,7 @@ class PLPAdapter:
                         "title": "Results",
                         "download_file": "Download '{{name}}'",
                         "default_title": "Result '{{id}}'",
+                        "no_results": "No results available",
                     },
                     "form": {
                         "groups": {
@@ -214,7 +215,6 @@ class PLPAdapter:
                             "find_targets": "Find Targets",
                             "extract_sequences": "Extract Sequences",
                             "extract_features": "Extract Features",
-
                         },
                         "content": {
                             "extras_info": "The following fields may cause the calculations to take significantly longer, so use with care."
@@ -224,7 +224,8 @@ class PLPAdapter:
                     },
                     "service": {
                         "title": "ISS Probe design",
-                        "subtitle": "Design padlock probes for in-situ sequencing"
+                        "subtitle": "Design padlock probes for in-situ sequencing",
+                        "waiting_for_results": "Waiting for ISS Probe results",
                     },
                     "fields": {
                         "genome.label": "Genome",

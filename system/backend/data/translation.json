@@ -3,7 +3,9 @@
         "translation": {
             "results": {
                 "title": "Results",
-                "download_file": "Download '{{name}}'"
+                "download_file": "Download '{{name}}'",
+                "default_title": "Result '{{id}}'",
+                "no_results": "No results available"
             },
             "form": {
                 "submit": "Submit",
@@ -18,7 +20,8 @@
             },
             "service": {
                 "title": "ISS Probe design",
-                "subtitle": "Design padlock probes for in-situ sequencing"
+                "subtitle": "Design padlock probes for in-situ sequencing",
+                "waiting_for_results": "Waiting for results"
             },
             "fields": {
                 "source_sequence.gene_transcript_name_or_fasta.label": "Ensembl gene/transcript name(s) or FASTA sequence",
