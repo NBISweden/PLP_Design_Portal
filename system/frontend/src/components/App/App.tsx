@@ -6,6 +6,8 @@ import { useClient } from "../../modules/Client";
 import {
     createBrowserRouter,
     RouterProvider,
+    useNavigate,
+    Outlet,
 } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import "./App.css";
@@ -14,28 +16,51 @@ import {Footer} from "../Footer/Footer";
 const router = createBrowserRouter([
     {
         path: "/",
-        element: <Service />,
-    },
-    {
-        path: "/results/",
-        element: <ResultList />,
-    },
-    {
-        path: "/results/:resultId",
-        element: <Result />,
+        element: <AppCore />,
+        children: [
+            {
+                path: "/",
+                element: <Service />,
+            },
+            {
+                path: "/results/",
+                element: <ResultList />,
+            },
+            {
+                path: "/results/:resultId",
+                element: <Result />,
+            },
+        ],
     },
 ]);
 
 
 export function App() {
+    return <RouterProvider router={router} />
+}
+
+function AppCore() {
+    const navigate = useNavigate();
     const {t} = useTranslation();
     const client = useClient();
     const title = t("service.title");
-    const menuItems: MenuItem[] = client.links.map(link => ({
-        label: t(`links.${link.id}`),
-        href: link.href,
-        icon: link.icon,
-    }))
+    const menuItems: MenuItem[] = [
+        {
+            label: "Service",
+            status: router.state.location.pathname === "/" ? "active" : undefined,
+            onClick: () => navigate("/")
+        },
+        {
+            label: "Result History",
+            status: router.state.location.pathname === "/results/" ? "active" : undefined,
+            onClick: () => navigate("/results/")
+        },
+        ...client.links.map(link => ({
+            label: t(`links.${link.id}`),
+            href: link.href,
+            icon: link.icon,
+        })),
+    ]
 
     useEffect(() => {
         document.title = title;
@@ -48,7 +73,7 @@ export function App() {
                 subtitle={t("service.subtitle")}
                 menuItems={menuItems}/>
             <main>
-                <RouterProvider router={router} />
+                <Outlet />
             </main>
             <Footer/>
         </>

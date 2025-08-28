@@ -15,7 +15,7 @@ export function Result() {
         <section className="section has-background-custom-grey-light">
             <div className="container">
                 <div className="box">
-                    <h2 className="title is-size-4-mobile has-text-centered">{t("results.title")}</h2>
+                    <h2 className="title is-size-4-mobile has-text-centered">{result && "label" in result && result.label || t("results.title")}</h2>
                     {result && "type" in result ? (
                         <div className="result-container">No result available for id {result.id}</div>
                     ) : <></>} 

@@ -1,15 +1,16 @@
 import "./Header.css";
 
 export type MenuItem = {
+    status?: "active";
     label: string;
     icon?: string;
 } & (
     {
         href: string;
     } | {
-    onClick: () => void;
-}
-    )
+        onClick: () => void;
+    }
+)
 
 interface Props {
     title: string;
@@ -35,7 +36,7 @@ export function Header({title, subtitle, menuItems}: Props) {
                         <nav>
                             <ul className="is-flex">
                                 {menuItems.map((item, index) => (
-                                    <li key={index} className="ml-4">
+                                    <li key={index} className={`header-nav px-2 py-1 ml-2 ${item.status === "active" ? "active" : ""}`}>
                                         {"href" in item ? (
                                             <a href={item.href} className="is-size-6 ">
                                                 {item.icon && <i className={`${item.icon} mr-2`} aria-hidden="true"></i>}
