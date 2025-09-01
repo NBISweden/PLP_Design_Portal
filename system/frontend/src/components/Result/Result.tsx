@@ -47,7 +47,10 @@ export function ResultList() {
                         <div key={result.id} className="result-container">
                             <h3 className="title is-size-5-mobile is-size-4 mt-4 has-text-weight-normal">{result.label || t("results.default_title", {id: result.id})}</h3>
                             <p>{result.description}</p>
-                            <button type="submit" onClick={() => navigate(`/results/${result.id}`)} className="button is-secondary-custom">View result for {result.label || result.id}</button>
+                            <div className="buttons">
+                            <button onClick={() => navigate(`/results/${result.id}`)} className="button is-secondary-custom">View result for {result.label || result.id}</button>
+                            <button onClick={() => results.removeResult(result)} className="button is-danger has-text-white">Remove</button>
+                            </div>
                         </div>
                     )) : <p>{t("results.no_results")}</p>}
                 </div>
