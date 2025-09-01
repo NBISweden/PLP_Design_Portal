@@ -31,7 +31,6 @@ class Config:
     genome: str
     genes: str = "Grik2"
     identifier_type: Literal["gene_name", "gene_id"] = "gene_name"
-    gene_feature: Literal["CDS", "exon"] = "CDS"
     plp_length: int = 30
     iupac_mismatches: str = "5:R,10:G"
     max_errors: Literal[1, 2, 3, 4, 5, 6] = 4
@@ -50,7 +49,6 @@ class Config:
             genome=data["genome"],
             genes=data["genes"],
             identifier_type=data["identifier_type"],
-            gene_feature=data["gene_feature"],
             plp_length=int(data["plp_length"]),
             iupac_mismatches=data["iupac_mismatches"],
             max_errors=int(data["max_errors"]),
@@ -117,15 +115,6 @@ class PLPAdapter:
                     "gene_id"
                 ],
                 "default": "gene_name"
-            },
-            {
-                "id": "gene_feature",
-                "type": "choice",
-                "options": [
-                    "CDS",
-                    "exon"
-                ],
-                "default": "CDS"
             },
             {
                 "id": "plp_length",
@@ -231,7 +220,6 @@ class PLPAdapter:
                         "genome.label": "Genome",
                         "genes.label": "Genes",
                         "identifier_type.label": "Identifier Type",
-                        "gene_feature.label": "Gene Feature",
                         "plp_length.label": "PLP Length",
                         "number_of_probes.label": "Number of Probes",
                         "iupac_mismatches.label": "IUPAC Mismatches",
@@ -271,7 +259,7 @@ class PLPAdapter:
                         "type": "field",
                         "id": field_id,
                     }
-                    for field_id in ["genes", "gene_feature"]
+                    for field_id in ["genes"]
                 ]
             },
             {
@@ -423,7 +411,6 @@ def extract_features(
     gtf_file: str,
     genes_str=None,
     identifier_type='gene_id',
-    gene_feature='CDS'
 ):
     # Parse the GTF file and filter by gene list
     gtf_df, genes_of_interest = plp.parse_gtf(gtf_file, genes_str, identifier_type)
@@ -515,7 +502,6 @@ def run_prope_design(
                     gtf_file=gtf_path,
                     genes_str=config.genes,
                     identifier_type=config.identifier_type,
-                    gene_feature=config.gene_feature
                 )
                 extracted_features.to_csv(extracted_features_output_path, sep='\t', index=False)
                 _update_status(
