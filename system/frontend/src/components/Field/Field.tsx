@@ -92,7 +92,7 @@ export function Field(props: {
         return (
             <>
                 <FieldView fieldDef={fieldDef} widget={widget}/>
-                {errors.length > 0 ? <div>
+                {errors.length > 0 ? <div className="p-2 has-background-warning has-text-white">
                     <ul>
                         {errors.map((error, index) => (<li key={index}>{t(error.id, error.description || error.id)}</li>))}
                     </ul>
