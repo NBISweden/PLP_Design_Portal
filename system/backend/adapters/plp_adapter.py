@@ -3,13 +3,20 @@ from typing import Literal
 from .result_data import (
     Result,
     ErrorResult,
+    FieldError,
     TableData,
     DeferredResult,
     StatusData,
     StatusEntry,
 )
 from .result_manager import ResultManager, ResultContext
-from plp_directrna_design import probedesign as plp  # type: ignore
+from plp_directrna_design.cli_utils import (
+    extract_features,
+    extract_mrna,
+    extract_sequences,
+    find_targets,
+    parse_genes,
+)
 from multiprocessing import Lock
 from concurrent.futures import ProcessPoolExecutor
 import os
@@ -19,6 +26,7 @@ import logging
 import contextlib
 from datetime import datetime
 import functools
+from uuid import uuid4
 
 
 GENOME_LIST_PATH = os.getenv("PLP_GENOME_LIST_PATH", "genome_list.json")
@@ -32,6 +40,9 @@ class Config:
     genes: str = "Grik2"
     identifier_type: Literal["gene_name", "gene_id"] = "gene_name"
     plp_length: int = 30
+    min_coverage: int = 0
+    gc_min: int = 50
+    gc_max: int = 65
     iupac_mismatches: str = "5:R,10:G"
     max_errors: Literal[1, 2, 3, 4, 5, 6] = 4
     tm_min: int = 58
@@ -42,25 +53,6 @@ class Config:
     number_of_probes: int = 10
     off_target_output: bool = False
     check_probe_specificity: bool = False
-
-    @staticmethod
-    def from_data(data):
-        return Config(
-            genome=data["genome"],
-            genes=data["genes"],
-            identifier_type=data["identifier_type"],
-            plp_length=int(data["plp_length"]),
-            iupac_mismatches=data["iupac_mismatches"],
-            max_errors=int(data["max_errors"]),
-            tm_min=int(data["tm_min"]),
-            tm_max=int(data["tm_max"]),
-            lowest_percentile_tm_score_cutoff=int(data["lowest_percentile_tm_score_cutoff"]),
-            minimum_prope_distance=int(data["minimum_prope_distance"]),
-            filter_ligation_junction=data["filter_ligation_junction"].lower() == "true",
-            number_of_probes=int(data["number_of_probes"]),
-            off_target_output=data["off_target_output"].lower() == "true",
-            check_probe_specificity=data["check_probe_specificity"].lower() == "true",
-        )
 
 
 @dataclass
@@ -120,6 +112,21 @@ class PLPAdapter:
                 "id": "plp_length",
                 "type": "number",
                 "default": 30
+            },
+            {
+                "id": "min_coverage",
+                "type": "number",
+                "default": 0
+            },
+            {
+                "id": "gc_min",
+                "type": "number",
+                "default": 50
+            },
+            {
+                "id": "gc_max",
+                "type": "number",
+                "default": 65
             },
             {
                 "id": "iupac_mismatches",
@@ -221,6 +228,9 @@ class PLPAdapter:
                         "genes.label": "Genes",
                         "identifier_type.label": "Identifier Type",
                         "plp_length.label": "PLP Length",
+                        "min_coverage.label": "Minimum Coverage",
+                        "gc_min.label": "GC Min",
+                        "gc_max.label": "GC Max",
                         "number_of_probes.label": "Number of Probes",
                         "iupac_mismatches.label": "IUPAC Mismatches",
                         "max_errors.label": "Max Number of Errors",
@@ -293,6 +303,8 @@ class PLPAdapter:
                         "number_of_probes",
                         "iupac_mismatches",
                         "max_errors",
+                        "min_coverage",
+                        ["gc_min", "gc_max"],
                         ["tm_min", "tm_max"],
                         "lowest_percentile_tm_score_cutoff",
                         "minimum_prope_distance",
@@ -319,7 +331,20 @@ class PLPAdapter:
         ]
 
     def run(self, data, result_manager: ResultManager) -> Result | DeferredResult | ErrorResult:
-        config = Config.from_data(data)
+        config, config_errors = self._config_from_data(data)
+
+        if config_errors is not None:
+            return ErrorResult(
+                label="Error",
+                id=str(uuid4()),
+                errors=[
+                    FieldError(
+                        fieldId=key,
+                        id=error
+                    )
+                    for key, error in config_errors
+                ]
+            )
 
         genome = self._get_genome_ref(config.genome)
         src_fa_path = self._abs_genome_path(genome.fa_path)
@@ -394,6 +419,93 @@ class PLPAdapter:
         except FileNotFoundError:
             return []
 
+    def _config_from_data(self, raw_data):
+        errors = []
+        parsers = {
+            "genome": create_enum_parser({item.id for item in self._get_genome_list()}),
+            "genes": parse_genes,
+            "identifier_type": create_enum_parser({"gene_name", "gene_id"}),
+            "plp_length": int,
+            "min_coverage": int,
+            "gc_min": int,
+            "gc_max": int,
+            "iupac_mismatches": self._noparse,
+            "max_errors": int,
+            "tm_min": int,
+            "tm_max": int,
+            "lowest_percentile_tm_score_cutoff": int,
+            "minimum_prope_distance": int,
+            "filter_ligation_junction": self._parse_boolean,
+            "number_of_probes": int,
+            "off_target_output": self._parse_boolean,
+            "check_probe_specificity": self._parse_boolean,
+        }
+
+        data = {}
+
+        for key, parser in parsers.items():
+            try:
+                data[key] = parsers[key](raw_data[key])
+            except ValueError as e:
+                errors.append((key, str(e)))
+
+
+        return (
+            (Config(
+                genome=data["genome"],
+                genes=data["genes"],
+                identifier_type=data["identifier_type"],
+                plp_length=data["plp_length"],
+                min_coverage=data["min_coverage"],
+                gc_min=data["gc_min"],
+                gc_max=data["gc_max"],
+                iupac_mismatches=data["iupac_mismatches"],
+                max_errors=data["max_errors"],
+                tm_min=data["tm_min"],
+                tm_max=data["tm_max"],
+                lowest_percentile_tm_score_cutoff=data["lowest_percentile_tm_score_cutoff"],
+                minimum_prope_distance=data["minimum_prope_distance"],
+                filter_ligation_junction=data["filter_ligation_junction"],
+                number_of_probes=data["number_of_probes"],
+                off_target_output=data["off_target_output"],
+                check_probe_specificity=data["check_probe_specificity"],
+            ), None)
+            if len(errors) == 0
+            else (None, errors)
+        )
+
+    def _noparse(self, data):
+        return data
+
+    def _parse_boolean(self, data):
+        if not isinstance(data, str) and not isinstance(data, bool):
+            raise ValueError("Input value type is incorrect")
+
+        if isinstance(data, str):
+            data = data.lower()
+
+            if data not in {"true", "false"}:
+                raise ValueError("Value must be 'true' or 'false'")
+
+        return (
+            data
+            if isinstance(data, bool)
+            else data == "true"
+        )
+
+
+def create_enum_parser(values: set[str]):
+    def _parser(data):
+        if not isinstance(data, str):
+            raise ValueError("Value must be a string")
+
+        if data not in values:
+            raise ValueError(f"Value {data} is not in {values}")
+
+        return data
+
+    return _parser
+
 
 @contextlib.contextmanager
 def cwd_context(target_cwd):
@@ -405,18 +517,6 @@ def cwd_context(target_cwd):
 
     finally:
         os.chdir(original_cwd)
-
-
-def extract_features(
-    gtf_file: str,
-    genes_str=None,
-    identifier_type='gene_id',
-):
-    # Parse the GTF file and filter by gene list
-    gtf_df, genes_of_interest = plp.parse_gtf(gtf_file, genes_str, identifier_type)
-
-    # Merge regions and calculate coverage
-    return plp.merge_regions_and_coverage(genes_of_interest, gtf_df)
 
 
 def current_time():
@@ -498,12 +598,19 @@ def run_prope_design(
                 regions_output_path = os.path.join(workdir, "regions")
                 result_output_path = os.path.join(workdir, "result.csv")
 
+                _update_status(
+                    StatusEntry(
+                        progress=10,
+                        description=f"extracted_features: {config.genes}"
+                    )
+                )
+
                 extracted_features = extract_features(
                     gtf_file=gtf_path,
-                    genes_str=config.genes,
+                    output_file=extracted_features_output_path,
+                    genes=config.genes,
                     identifier_type=config.identifier_type,
                 )
-                extracted_features.to_csv(extracted_features_output_path, sep='\t', index=False)
                 _update_status(
                     StatusEntry(
                         progress=10,
@@ -524,7 +631,7 @@ def run_prope_design(
                 )
 
                 extract_sequences(
-                    extracted_features=extracted_features,
+                    gtf_output=extracted_features_output_path,
                     fasta_file=fa_path,
                     output_fasta=extracted_sequences_fa_output_path,
                     plp_length=config.plp_length,
@@ -540,9 +647,12 @@ def run_prope_design(
 
                 targets_df = find_targets(
                     selected_features=extracted_features_output_path,
-                    fasta_file=extracted_sequences_fa_output_path,
+                    sequences_output=extracted_sequences_fa_output_path,
                     output_file=result_output_path,
                     reference_fasta=extracted_sequences_fa_output_path,
+                    min_coverage=config.min_coverage,
+                    gc_min=config.gc_min,
+                    gc_max=config.gc_max,
                     num_probes=config.number_of_probes,
                     iupac_mismatches=config.iupac_mismatches,
                     max_errors=config.max_errors,
@@ -583,104 +693,6 @@ def run_prope_design(
                 description=f"Search failed: {e}: {current_time() - start_time}"
             )
         )
-
-
-def extract_mrna(
-    gtf_file: str,
-    fasta_file: str,
-    output_file: str,
-):
-    records = plp.extract_mrna_sequences(
-        fasta_file=fasta_file,
-        gtf_file=gtf_file,
-        output_file=output_file,
-        plus_strand_only=False,
-        revcomp=False,
-        translate=False,
-        codon_table=1,
-        alternative_start_codon=True,
-        clean_final_stop=True,
-        clean_internal_stop=False,
-        verbose=False
-    )
-    return records
-
-
-def extract_sequences(
-    extracted_features,
-    fasta_file: str,
-    output_fasta: str,
-    plp_length: int,
-    identifier_type: Literal["gene_name", "gene_id"],
-    regions_file: str
-):
-    # Ensure FASTA index exists
-    plp.check_fasta_index(fasta_file)
-
-    # Save regions for fast retrieval
-    plp.save_regions_for_faidx(extracted_features, regions_file, plp_length, identifier_type=identifier_type)
-
-    # Extract sequences
-    plp.extract_sequences(fasta_file, regions_file + ".txt", output_fasta, extracted_features)
-
-
-def find_targets(
-    selected_features,
-    fasta_file,
-    output_file,
-    reference_fasta,
-    min_coverage=1,
-    gc_min=50,
-    gc_max=65,
-    num_probes=10,
-    iupac_mismatches=None,
-    max_errors=1,
-    check_specificity=False,
-    plp_length=30,
-    Tm_min=55,
-    Tm_max=65,
-    lowest_percentile_Tm_score_cutoff=5,
-    min_dist_probes=10,
-    filter_ligation_junction=True,
-    off_target_output=False
-):
-    targets_df, off_target_info = plp.find_targets(
-        selected_features=selected_features,
-        fasta_file=fasta_file,
-        reference_fasta=reference_fasta,
-        plp_length=plp_length,
-        min_coverage=min_coverage,
-        output_file=output_file,
-        gc_min=gc_min,
-        gc_max=gc_max,
-        num_probes=num_probes,
-        iupac_mismatches=iupac_mismatches,
-        max_errors=max_errors,
-        check_specificity=check_specificity,
-        off_target_output=off_target_output
-    )
-    if off_target_output:
-        # Save the off-target information
-        off_target_info.to_csv(output_file.replace('.tsv', '_off_target.tsv'), sep='\t', index=False)
-
-    # Calculate the melting temperature scores
-    sequences = targets_df['Sequence']
-    scores = [plp.score_padlock_probe(seq, Tm_min=Tm_min, Tm_max=Tm_max) for seq in sequences]
-    targets_df['Melt_Tm_scores'] = scores
-    # Calculate the suggested cutoff based on the 5th percentile
-    suggested_cutoff = plp.analyze_scores(scores, percentile=lowest_percentile_Tm_score_cutoff)
-    # Filter the targets based on the suggested cutoff
-    targets_df = targets_df[targets_df['Melt_Tm_scores'] <= suggested_cutoff]
-    # Filteer the probes based on the minimum distance between probes
-    targets_df = plp.filter_probes_by_distance(targets_df, min_dist_probes=min_dist_probes)
-    # filter the probes based on the ligation junction preferences
-    if filter_ligation_junction:
-        targets_df = targets_df[targets_df['Ligation junction'] != 'non-preferred']
-
-    targets_df = plp.select_top_probes(targets_df, num_probes)
-    # Save the output
-    targets_df.to_csv(output_file, sep='\t', index=False)
-    return targets_df
 
 
 def create_adapter():
