@@ -16,6 +16,7 @@ from plp_directrna_design.cli_utils import (
     extract_sequences,
     find_targets,
     parse_genes,
+    parse_iupac_mismatches,
 )
 from multiprocessing import Lock
 from concurrent.futures import ProcessPoolExecutor
@@ -429,7 +430,7 @@ class PLPAdapter:
             "min_coverage": int,
             "gc_min": int,
             "gc_max": int,
-            "iupac_mismatches": self._noparse,
+            "iupac_mismatches": parse_iupac_mismatches,
             "max_errors": int,
             "tm_min": int,
             "tm_max": int,
@@ -606,8 +607,8 @@ def run_prope_design(
                 )
 
                 extracted_features = extract_features(
-                    gtf_file=gtf_path,
-                    output_file=extracted_features_output_path,
+                    gtf=gtf_path,
+                    output=extracted_features_output_path,
                     genes=config.genes,
                     identifier_type=config.identifier_type,
                 )
@@ -632,7 +633,7 @@ def run_prope_design(
 
                 extract_sequences(
                     gtf_output=extracted_features_output_path,
-                    fasta_file=fa_path,
+                    fasta=fa_path,
                     output_fasta=extracted_sequences_fa_output_path,
                     plp_length=config.plp_length,
                     identifier_type=config.identifier_type,
