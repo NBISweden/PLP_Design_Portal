@@ -4,6 +4,7 @@ import React from "react";
 export type FieldDef = {
     id: string;
     required?: boolean;
+    disabled?: boolean;
 } & ({
     type: "choice",
     options: string[] | number[];
@@ -49,6 +50,38 @@ export class StaticFieldManager implements FieldManager {
             throw new Error(`No field with specified requirement found: id: ${id} type: ${type}`)
         } else {
             return fieldDef;
+        }
+    }
+}
+
+
+export class DisableFieldManager implements FieldManager {
+    private _fieldManager: FieldManager;
+
+    constructor(fieldManager: FieldManager) {
+        this._fieldManager = fieldManager;
+    }
+
+    listFields() {
+        return this._fieldManager.listFields().map<FieldDef>((fd) => ({
+            ...fd,
+            disabled: true
+        }));
+    }
+
+    getField(id: string, type?: FieldDef["type"]) {
+        const fieldDefs = this._fieldManager.listFields();
+    
+        const fieldDef: FieldDef | undefined = fieldDefs.filter(
+            fd => fd.id === id && (!type || fd.type === type)
+        )[0];
+        if (fieldDef === undefined) {
+            throw new Error(`No field with specified requirement found: id: ${id} type: ${type}`)
+        } else {
+            return {
+                ...fieldDef,
+                disabled: true,
+            };
         }
     }
 }

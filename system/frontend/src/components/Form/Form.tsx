@@ -83,7 +83,6 @@ export function Form({ handleSubmit, layout }: FormProps) {
                 );
             })}
             <button type="submit" className="button is-pulled-right is-primary">{t("form.submit")}</button>
-            <button type="submit" className="button is-pulled-right is-secondary-custom mr-3">{t("form.show_example")}</button>
         </form>
     )
 }

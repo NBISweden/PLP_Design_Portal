@@ -11,6 +11,7 @@ export type WidgetProps = {
     placeholder: string,
     required: boolean,
     default?: unknown,
+    disabled?: boolean,
     options?: {
         value: unknown,
         label: string
@@ -43,24 +44,24 @@ export function FieldView(props: {
 
     if (widget !== undefined) {
         const defaultValue = fieldDef.default;
-        return widget({label, type: fieldDef.type, name, default: defaultValue, options, placeholder, required})
+        return widget({label, type: fieldDef.type, name, disabled: fieldDef.disabled, default: defaultValue, options, placeholder, required})
     } else {
         switch (fieldDef.type) {
             case "choice": {
                 const defaultValue = fieldDef.default;
-                return <DropDown label={label} name={name} defaultValue={defaultValue} options={options} required={required}/>
+                return <DropDown label={label} name={name} defaultValue={defaultValue} options={options} required={required} disabled={fieldDef.disabled}/>
             }
             case "number": {
                 const defaultValue = fieldDef.default;
-                return <InputField type="number" name={name} defaultValue={defaultValue} label={label} placeholder={placeholder} required={required}/>
+                return <InputField type="number" name={name} defaultValue={defaultValue} label={label} placeholder={placeholder} required={required} disabled={fieldDef.disabled}/>
             }
             case "text": {
                 const defaultValue = fieldDef.default;
-                return <InputField type="text" name={name} defaultValue={defaultValue} label={label} placeholder={fieldDef.placeholder} required={required}/>
+                return <InputField type="text" name={name} defaultValue={defaultValue} label={label} placeholder={fieldDef.placeholder} required={required} disabled={fieldDef.disabled}/>
             }
             case "yesno": {
                 const defaultValue = fieldDef.default;
-                return <CheckBox name={name} label={label} defaultValue={defaultValue} required={required}/>
+                return <CheckBox name={name} label={label} defaultValue={defaultValue} required={required} disabled={fieldDef.disabled}/>
             }
         }
     }

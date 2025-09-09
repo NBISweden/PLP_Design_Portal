@@ -6,9 +6,10 @@ interface Props {
     required?: boolean;
     name?: string;
     defaultValue?: boolean;
+    disabled?: boolean;
 }
 
-export function CheckBox({label, required, name, defaultValue}: Props) {
+export function CheckBox({label, required, name, defaultValue, disabled}: Props) {
     const id = React.useId()
     return (
         <>
@@ -24,6 +25,7 @@ export function CheckBox({label, required, name, defaultValue}: Props) {
                         checked={defaultValue}
                         required={required}
                         className="plp-checkbox"
+                        disabled={disabled}
                     />
                 </div>
             </div>

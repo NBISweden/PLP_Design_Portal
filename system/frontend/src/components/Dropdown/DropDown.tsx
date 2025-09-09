@@ -9,6 +9,7 @@ interface Props {
     label: string;
     required?: boolean;
     name?: string;
+    disabled?: boolean;
 }
 
 
@@ -22,7 +23,7 @@ function listenForClickOnce(action: () => void) {
 }
 
 
-export function DropDown( {options, label, name, range, defaultValue}: Props){
+export function DropDown( {options, label, name, range, defaultValue, disabled}: Props){
     const id = React.useId();
 
     const generateRangeOptions = (start: number, end: number) => {
@@ -44,7 +45,7 @@ export function DropDown( {options, label, name, range, defaultValue}: Props){
         e.preventDefault();
         setSelected(value);
         setIsOpen(false); // Close dropdown after selection
-    };
+    }
 
     const handleClick = () => {
         setIsOpen(!isOpen)
@@ -58,7 +59,7 @@ export function DropDown( {options, label, name, range, defaultValue}: Props){
             <div className="field">
                 <label htmlFor={id}>{label}</label>
                 <div className="control">
-                    <div className={`dropdown is-fullwidth ${isOpen ? "is-active" : ""}`}>
+                    <div className={`dropdown is-fullwidth ${isOpen ? "is-active" : ""} ${disabled ? "is-disabled" : ""}`}>
                         <div className="dropdown-trigger">
                             <button type="button" className="button is-fullwidth is-flex is-justify-content-space-between" onClick={handleClick}>
                                 <span>{dropdownOptions.find((opt) => opt.value === selected)?.label || "Select an option"}</span>
@@ -84,7 +85,7 @@ export function DropDown( {options, label, name, range, defaultValue}: Props){
                     </div>
                 </div>
                 {/* Hidden Input to Store Selected Value */}
-                <input type="hidden" name={name} value={selected} />
+                <input type="hidden" name={name} value={selected} disabled={disabled}/>
             </div>
         </>
     )

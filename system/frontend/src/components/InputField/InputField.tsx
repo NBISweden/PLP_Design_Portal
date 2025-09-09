@@ -7,6 +7,7 @@ type Props = ({
         name?: string;
         defaultValue?: string | number;
         placeholder?: string;
+        disabled?: boolean;
     } & (
         {
             type: 'text' | 'number';
@@ -18,7 +19,7 @@ type Props = ({
 )
 
 export function InputField(props: Props) {
-    const {label, required, name, placeholder, defaultValue} = props;
+    const {label, required, name, placeholder, defaultValue, disabled} = props;
     const id = React.useId();
     return (
         <>
@@ -34,6 +35,7 @@ export function InputField(props: Props) {
                             required={required}
                             className="textarea"
                             placeholder={placeholder}
+                            disabled={disabled}
                         ></textarea>
                     ) : (
                         <input
@@ -44,6 +46,7 @@ export function InputField(props: Props) {
                             required={required}
                             className="input"
                             placeholder={placeholder}
+                            disabled={disabled}
                         />
                     )}
                 </div>
