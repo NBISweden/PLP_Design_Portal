@@ -185,7 +185,7 @@ export const ClientContext = React.createContext<ClientAPI<BasicContent>>({
             }
         }
     },
-    result(ref) {
+    result(ref: {id: string}) {
         return {
             get() {
                 console.log(ref);
