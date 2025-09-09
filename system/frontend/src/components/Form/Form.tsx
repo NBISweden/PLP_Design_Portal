@@ -1,6 +1,6 @@
 import {Field, WidgetProps} from "../Field/Field";
 import {InputField} from "../InputField/InputField";
-import {FormEventHandler} from "react";
+import {FormEventHandler, Fragment} from "react";
 import "./Form.css";
 import { useTranslation } from "react-i18next";
 
@@ -62,10 +62,10 @@ function FormGroup(group: LayoutGroup) {
                 } else if (item.type == "content") {
                     const contentKey = `form.content.${item.id}`
                     return (
-                        <>
+                        <Fragment key={`form.field.${item.id}`}>
                             <div key={contentKey}>{t(contentKey)}</div>
                             <hr/>
-                        </>
+                        </Fragment>
                     )
                 }
             })}
