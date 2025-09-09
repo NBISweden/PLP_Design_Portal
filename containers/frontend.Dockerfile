@@ -7,4 +7,4 @@ ARG FRONTEND_SRC_DIR
 RUN mkdir -p "$FRONTEND_SRC_DIR"
 WORKDIR "$FRONTEND_SRC_DIR"
 
-CMD npm ci && npm run build-watch
+CMD npm ci && npm run dev

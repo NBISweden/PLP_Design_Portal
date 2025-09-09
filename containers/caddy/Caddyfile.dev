@@ -1,0 +1,19 @@
+:8080 {
+	log {
+		output stderr
+		format console
+		level INFO
+	}
+
+	handle /api/* {
+		reverse_proxy localhost:5000
+	}
+
+	handle /config/* {
+		reverse_proxy localhost:5000
+	}
+
+	rewrite /results/ /index.html
+
+	reverse_proxy frontend:5173
+}

@@ -36,8 +36,6 @@ def create_app():
 
     app = Flask(
         __name__,
-        static_url_path="",
-        static_folder="static"
     )
     app.secret_key = os.getenv("APP_SECRET_KEY", os.urandom(24).hex())
     Compress(app)
@@ -73,7 +71,7 @@ def create_app():
             logger.info(f"Failed to get result: {e}")
             return make_error(f"The result could not be found for: {result_id}")
 
-    @app.route('/config.json')
+    @app.route('/config/config.json')
     def config():
         return jsonify({
             "rootUrl": "/api/",
@@ -83,34 +81,26 @@ def create_app():
             "language": "en",
             "links": adapter.links,
             "translation": {
-                "url": "/translation.json"
+                "url": "/config/translation.json"
             },
             "fields": {
-                "url": "/fields.json"
+                "url": "/config/fields.json"
             },
             "layout": {
-                "url": "/layout.json"
+                "url": "/config/layout.json"
             },
         })
 
-    @app.route('/translation.json')
+    @app.route('/config/translation.json')
     def translation():
         return jsonify(adapter.translation)
 
-    @app.route('/fields.json')
+    @app.route('/config/fields.json')
     def fields():
         return jsonify(adapter.fields)
 
-    @app.route('/layout.json')
+    @app.route('/config/layout.json')
     def layout():
         return jsonify(adapter.layout)
-
-    @app.route('/')
-    def index():
-        return send_file(f"{app.static_folder}/index.html")
-
-    @app.errorhandler(404)
-    def http_404_error_handler(error):
-        return send_file(f"{app.static_folder}/index.html")
 
     return app

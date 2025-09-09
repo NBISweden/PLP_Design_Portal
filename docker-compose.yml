@@ -22,7 +22,7 @@ services:
     profiles:
       - dev
     ports:
-      - 127.0.0.1:${BACKEND_PORT:-5000}:${BACKEND_PORT:-5000}
+      - 127.0.0.1:${BACKEND_PORT:-5000}:8080
     volumes:
       - ./system/backend/:${BACKEND_SRC_DIR:-/opt/app}
       - ./test-data/plp/:${BACKEND_SERVICE_DIR:-/home/plp_data}
@@ -39,7 +39,7 @@ services:
     profiles:
       - prod
     ports:
-      - 127.0.0.1:${BACKEND_PORT:-5000}:${BACKEND_PORT:-5000}
+      - 127.0.0.1:${BACKEND_PORT:-5000}:8080
     volumes:
       - ./test-data/plp/:${BACKEND_SERVICE_DIR:-/home/plp_data}
 
