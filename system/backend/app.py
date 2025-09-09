@@ -9,8 +9,8 @@ import os
 import time
 import logging
 from flask_compress import Compress  # type: ignore
-from adapters.plp_adapter import create_adapter
-from adapters.result_manager import ResultManager
+from .adapters.plp_adapter import create_adapter
+from .adapters.result_manager import ResultManager
 
 
 def parse_query(args: dict[str, str]):

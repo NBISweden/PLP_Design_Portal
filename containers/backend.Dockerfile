@@ -84,13 +84,13 @@ COPY --from=system backend/requirements.dev.txt requirements.dev.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --break-system-packages -r requirements.dev.txt
 
-COPY --chown=$UID --chmod=444 containers/caddy/Caddyfile.dev "$BACKEND_SCRIPTS/Caddyfile"
-COPY --chown=$UID --chmod=555 containers/scripts/start-script.dev.sh "$BACKEND_SCRIPTS/start-script.sh"
+COPY --chown=$UID --chmod=444 containers/caddy/Caddyfile.dev ./Caddyfile
+COPY --chown=$UID --chmod=555 containers/scripts/start-script.dev.sh ./start-script.sh
 
 WORKDIR "$BACKEND_SRC_DIR"
 
 USER "$UID"
-CMD "$BACKEND_SCRIPTS/start-script.sh"
+CMD ./start-script.sh
 
 ########################################
 FROM node:22-alpine3.19 AS builder
@@ -110,13 +110,13 @@ ARG UID
 ARG FRONTEND_SRC_DIR
 ARG BACKEND_PLP_GENOME_DATA_PATH
 
-COPY --from=system backend/ ./
+COPY --from=system backend/ ./backend
 COPY --from=builder "$FRONTEND_SRC_DIR/dist/" frontend/
 RUN mkdir -p "$BACKEND_PLP_GENOME_DATA_PATH"
 RUN chmod o+r "$BACKEND_PLP_GENOME_DATA_PATH"
 
-COPY --chown=$UID --chmod=444 containers/caddy/Caddyfile "$BACKEND_SCRIPTS/Caddyfile"
-COPY --chown=$UID --chmod=555 containers/scripts/start-script.sh "$BACKEND_SCRIPTS/start-script.sh"
+COPY --chown=$UID --chmod=444 containers/caddy/Caddyfile ./Caddyfile
+COPY --chown=$UID --chmod=555 containers/scripts/start-script.sh ./start-script.sh
 
 USER "$UID"
-CMD "$BACKEND_SCRIPTS/start-script.sh"
+CMD ./start-script.sh
