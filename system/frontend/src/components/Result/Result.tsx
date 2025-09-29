@@ -14,19 +14,21 @@ export function Result() {
     return (
         <section className="section has-background-custom-grey-light">
             <div className="container">
-                <div className="box">
-                    <h2 className="title is-size-4-mobile has-text-centered">{result && "label" in result && result.label || t("results.title")}</h2>
-                    {result && "type" in result ? (
-                        <div className="result-container">No result available for id {result.id}</div>
-                    ) : <></>} 
-                    {result && "items" in result ? (
-                        result.items.map((entry, index) => (
-                            <div key={index} className="result-container">
-                                <h2 className="title is-size-5-mobile is-size-4 mt-4 has-text-weight-normal">{entry.label}</h2>
-                                <ResultEntry {...entry}/>
-                            </div>
-                        ))
-                    ) : null}
+                <h2 className="title is-size-4-mobile has-text-centered">{result && "label" in result && result.label || t("results.title")}</h2>
+                <div className="columns is-centered">
+                    <div className="column is-two-thirds">
+                        {result && "type" in result ? (
+                            <div className="result-container">No result available for id {result.id}</div>
+                        ) : <></>} 
+                        {result && "items" in result ? (
+                            result.items.map((entry, index) => (
+                                <div key={index} className="result-container">
+                                    <h2 className="title is-size-5-mobile is-size-4 mt-4 has-text-weight-normal">{entry.label}</h2>
+                                    <ResultEntry {...entry}/>
+                                </div>
+                            ))
+                        ) : null}
+                    </div>
                 </div>
             </div>
         </section>
@@ -41,18 +43,24 @@ export function ResultList() {
     return (
         <section className="section has-background-custom-grey-light">
             <div className="container">
-                <div className="box">
-                    <h2 className="title is-size-4-mobile has-text-centered">{t("results.title")}</h2>
-                    {resultList.length > 0 ? resultList.map(result => (
-                        <div key={result.id} className="result-container">
-                            <h3 className="title is-size-5-mobile is-size-4 mt-4 has-text-weight-normal">{result.label || t("results.default_title", {id: result.id})}</h3>
-                            <p>{result.description}</p>
-                            <div className="buttons">
-                            <button onClick={() => navigate(`/results/${result.id}`)} className="button is-secondary-custom">View result for {result.label || result.id}</button>
-                            <button onClick={() => results.removeResult(result)} className="button is-danger has-text-white">Remove</button>
+                <h2 className="title is-size-4-mobile has-text-centered">{t("results.title")}</h2>
+                <div className="columns is-centered">
+                    <div className="column is-two-thirds">
+                        {resultList.length > 0 ? resultList.map(result => (
+                            <div key={result.id} className="card result-container">
+                                <div className="card-content">
+                                    <div className="content">
+                                        <h3 className="title is-size-5-mobile is-size-4 mt-4 has-text-weight-normal">{result.label || t("results.default_title", {id: result.id})}</h3>
+                                        <p>{result.description}</p>
+                                        <div className="buttons">
+                                            <button onClick={() => navigate(`/results/${result.id}`)} className="button is-secondary-custom">View result for {result.label || result.id}</button>
+                                            <button onClick={() => results.removeResult(result)} className="button is-danger has-text-white">Remove</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    )) : <p>{t("results.no_results")}</p>}
+                        )) : <p>{t("results.no_results")}</p>}
+                    </div>
                 </div>
             </div>
         </section>
