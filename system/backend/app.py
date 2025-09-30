@@ -13,6 +13,9 @@ from .adapters.plp_adapter import create_adapter
 from .adapters.result_manager import ResultManager
 
 
+DEFERRED_RESULT_PATH = os.getenv("PLP_DEFERRED_RESULT_PATH", "/tmp/results")
+
+
 def parse_query(args: dict[str, str]):
     return {
         key: [str(value) for v in value] if isinstance(value, list) else str(value)
@@ -26,9 +29,10 @@ def make_error(message):
 
 def create_app():
     wait_for_results_iterations = 1
+    os.makedirs(DEFERRED_RESULT_PATH, exist_ok=True)
     result_manager = ResultManager(
         url_format="/api/deferred/{id}",
-        result_root="/tmp"
+        result_root=DEFERRED_RESULT_PATH
     )
     adapter = create_adapter()
     logger = logging.getLogger(__name__)

@@ -1,5 +1,13 @@
-from dataclasses import dataclass
-from typing import Literal
+from pydantic import (
+    BaseModel,
+    TypeAdapter,
+    field_validator,
+    ValidationError,
+    ValidationInfo,
+    Field
+)
+from typing import Literal, Tuple, List, Annotated
+import uuid
 from .result_data import (
     Result,
     ErrorResult,
@@ -9,72 +17,127 @@ from .result_data import (
     StatusData,
     StatusEntry,
 )
-from .result_manager import ResultManager, ResultContext
+from .jobs import Job
+from .result_manager import ResultManager
 from plp_directrna_design.cli_utils import (
-    extract_features,
-    extract_mrna,
-    extract_sequences,
-    find_targets,
     parse_genes,
     parse_iupac_mismatches,
 )
-from multiprocessing import Lock
-from concurrent.futures import ProcessPoolExecutor
 import os
-import json
-import tempfile
 import logging
-import contextlib
 from datetime import datetime
-import functools
-from uuid import uuid4
 
 
 GENOME_LIST_PATH = os.getenv("PLP_GENOME_LIST_PATH", "genome_list.json")
-DEFERRED_RESULT_PATH = os.getenv("PLP_DEFERRED_RESULT_PATH", "/tmp")
+JOBS_PATH = os.getenv("PLP_JOBS_PATH", "/tmp/jobs")
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class Config:
+class PLPConfig(BaseModel):
     genome: str
-    genes: str = "Grik2"
+    genes: set[str] = {"Grik2"}
     identifier_type: Literal["gene_name", "gene_id"] = "gene_name"
     plp_length: int = 30
     min_coverage: int = 0
     gc_min: int = 50
     gc_max: int = 65
-    iupac_mismatches: str = "5:R,10:G"
-    max_errors: Literal[1, 2, 3, 4, 5, 6] = 4
+    iupac_mismatches: List[Tuple[int, str]] = [(5, "R"), (10, "G")]
+    max_errors: Annotated[int, Field(ge=1, le=6)] = 4
     tm_min: int = 58
     tm_max: int = 62
-    lowest_percentile_tm_score_cutoff: int = 5  # 1 to 100
+    lowest_percentile_tm_score_cutoff: Annotated[int, Field(ge=1, le=100)] = 5
     minimum_prope_distance: int = 8
     filter_ligation_junction: bool = True
     number_of_probes: int = 10
     off_target_output: bool = False
     check_probe_specificity: bool = False
 
+    @field_validator("iupac_mismatches", mode="before", json_schema_input_type=str | List[Tuple[int, str]])
+    @classmethod
+    def validate_iupac_mismatches(
+        cls, value: str | List[Tuple[int, str]]
+    ) -> List[Tuple[int, str]]:
+        if isinstance(value, str):
+            return parse_iupac_mismatches(value)
+        else:
+            return value
 
-@dataclass
-class GenomeDataSet:
+    @field_validator("genes", mode="before", json_schema_input_type=str | set[str])
+    @classmethod
+    def validate_genes(
+        cls, value: str | set[str]
+    ) -> set[str]:
+        if isinstance(value, str):
+            return parse_genes(value)
+        else:
+            return value
+
+    @field_validator("genome", mode="before")
+    @classmethod
+    def validate_genome(
+        cls, value: str, info: ValidationInfo
+    ) -> str:
+        repository = (
+            info.context.get("genome_repository")
+            if info.context
+            else None
+        )
+        if repository:
+            repository.get(value)
+        return value
+
+
+class GenomeDataSet(BaseModel):
     id: str
     version: str
     fa_path: str
     gtf_path: str
 
+    @property
+    def fai_path(self):
+        return f"{self.fa_path}.fai"
 
-@functools.cache
-def get_id_lock(id: str):
-    return Lock()
+
+class GenomeRepository():
+    def __init__(self, genome_list_path: str):
+        self._genome_list_path = genome_list_path
+        self._genome_list_ta = TypeAdapter(List[GenomeDataSet])
+
+    def get_all(self) -> List[GenomeDataSet]:
+        genome_list = self._load_genome_list()
+        return genome_list
+
+    def get(self, id: str) -> GenomeDataSet:
+        genome_list = self._load_genome_list()
+        return next(
+            g
+            for g in genome_list
+            if g.id == id
+        )
+
+    def get_resource_path(self, path: str):
+        genome_root = os.path.dirname(self._genome_list_path)
+        return os.path.normpath(
+            os.path.join(genome_root, path)
+        )
+
+    def _load_genome_list(self) -> List[GenomeDataSet]:
+        try:
+            with open(self._genome_list_path) as f:
+                return self._genome_list_ta.validate_json(f.read())
+        except FileNotFoundError:
+            return []
+
+
+PLPJob = Job[Literal["plp"], PLPConfig]
 
 
 class PLPAdapter:
     name = "plp_search"
 
-    def __init__(self, genome_list_path: str):
-        self._genome_list_path = genome_list_path
-        self._executor = ProcessPoolExecutor(max_workers=4)
+    def __init__(self, genome_repository: GenomeRepository, jobs_path: str):
+        self._genome_repository = genome_repository
+        self._jobs_path = jobs_path
 
     @property
     def info(self):
@@ -92,7 +155,7 @@ class PLPAdapter:
                 "type": "choice",
                 "options": [
                     genome.id
-                    for genome in self._get_genome_list()
+                    for genome in self._genome_repository.get_all()
                 ]
             },
             {
@@ -332,12 +395,12 @@ class PLPAdapter:
         ]
 
     def run(self, data, result_manager: ResultManager) -> Result | DeferredResult | ErrorResult:
-        config, config_errors = self._config_from_data(data)
+        config, config_errors = self._parse_config(data)
 
         if config_errors is not None:
             return ErrorResult(
                 label="Error",
-                id=str(uuid4()),
+                id=str(uuid.uuid4()),
                 errors=[
                     FieldError(
                         fieldId=key,
@@ -346,11 +409,6 @@ class PLPAdapter:
                     for key, error in config_errors
                 ]
             )
-
-        genome = self._get_genome_ref(config.genome)
-        src_fa_path = self._abs_genome_path(genome.fa_path)
-        src_indexed_fa_path = f"{src_fa_path}.fai"
-        src_gtf_path = self._abs_genome_path(genome.gtf_path)
 
         date = datetime.now().isoformat()
         result_context = result_manager.create_context(label=f"PLP Service Result: {date}")
@@ -375,105 +433,50 @@ class PLPAdapter:
                 status=[
                     StatusEntry(
                         progress=0,
-                        description="Initiating calculations"
+                        description="Waiting for worker to process job"
                     )
                 ]
             )
         )
-        self._executor.submit(
-            run_prope_design,
-            result_context,
-            src_fa_path,
-            src_indexed_fa_path,
-            src_gtf_path,
-            config,
-        )
+        self._submit(config, result_context.id)
 
         return result_context.get_result()
 
-    def _abs_genome_path(self, path: str):
+    def _submit(self, config, target: str):
+        job: PLPJob = Job(
+            id=self._get_job_id(),
+            type="plp",
+            timestamp=timestamp(),
+            config=config,
+            target=target
+        )
+        os.makedirs(self._jobs_path, exist_ok=True)
+        with open(f"{self._jobs_path}/{job.id}", "w") as f:
+            f.write(job.model_dump_json())
+
+    def _get_job_id(self) -> str:
+        return str(uuid.uuid4())
+
+    def _abs_genome_path(self, path: str) -> str:
         genome_root = os.path.dirname(self._genome_list_path)
         return os.path.normpath(
             os.path.join(genome_root, path)
         )
 
-    def _get_genome_list(self) -> list[GenomeDataSet]:
-        genome_list = self._load_genome_list()
-        return genome_list
-
-    def _get_genome_ref(self, id: str):
-        genome_list = self._load_genome_list()
-        return next(
-            g
-            for g in genome_list
-            if g.id == id
-        )
-
-    def _load_genome_list(self):
+    def _parse_config(self, data: dict) -> PLPConfig:
         try:
-            with open(self._genome_list_path) as f:
-                data_list = json.load(f)
-                return [
-                    GenomeDataSet(**entry)
-                    for entry in data_list
-                ]
-        except FileNotFoundError:
-            return []
-
-    def _config_from_data(self, raw_data):
-        errors = []
-        parsers = {
-            "genome": create_enum_parser({item.id for item in self._get_genome_list()}),
-            "genes": parse_genes,
-            "identifier_type": create_enum_parser({"gene_name", "gene_id"}),
-            "plp_length": int,
-            "min_coverage": int,
-            "gc_min": int,
-            "gc_max": int,
-            "iupac_mismatches": parse_iupac_mismatches,
-            "max_errors": int,
-            "tm_min": int,
-            "tm_max": int,
-            "lowest_percentile_tm_score_cutoff": int,
-            "minimum_prope_distance": int,
-            "filter_ligation_junction": self._parse_boolean,
-            "number_of_probes": int,
-            "off_target_output": self._parse_boolean,
-            "check_probe_specificity": self._parse_boolean,
-        }
-
-        data = {}
-
-        for key, parser in parsers.items():
-            try:
-                data[key] = parsers[key](raw_data[key])
-            except ValueError as e:
-                errors.append((key, str(e)))
-
-
-        return (
-            (Config(
-                genome=data["genome"],
-                genes=data["genes"],
-                identifier_type=data["identifier_type"],
-                plp_length=data["plp_length"],
-                min_coverage=data["min_coverage"],
-                gc_min=data["gc_min"],
-                gc_max=data["gc_max"],
-                iupac_mismatches=data["iupac_mismatches"],
-                max_errors=data["max_errors"],
-                tm_min=data["tm_min"],
-                tm_max=data["tm_max"],
-                lowest_percentile_tm_score_cutoff=data["lowest_percentile_tm_score_cutoff"],
-                minimum_prope_distance=data["minimum_prope_distance"],
-                filter_ligation_junction=data["filter_ligation_junction"],
-                number_of_probes=data["number_of_probes"],
-                off_target_output=data["off_target_output"],
-                check_probe_specificity=data["check_probe_specificity"],
-            ), None)
-            if len(errors) == 0
-            else (None, errors)
-        )
+            config = PLPConfig.model_validate(
+                data,
+                context={"genome_repository": self._genome_repository}
+            )
+            return (config, None)
+        except ValidationError as error:
+            for e in error.errors():
+                logger.warn(e)
+            return (
+                None,
+                [(e["loc"][0], f"{e['msg']}: {e['type']}") for e in error.errors()]
+            )
 
     def _noparse(self, data):
         return data
@@ -508,195 +511,12 @@ def create_enum_parser(values: set[str]):
     return _parser
 
 
-@contextlib.contextmanager
-def cwd_context(target_cwd):
-    original_cwd = os.getcwd()
-    os.chdir(target_cwd)
-
-    try:
-        yield
-
-    finally:
-        os.chdir(original_cwd)
-
-
-def current_time():
+def timestamp():
     return datetime.now().timestamp()
-
-
-def run_prope_design(
-    result_context: ResultContext,
-    src_fa_path: str,
-    src_indexed_fa_path: str,
-    src_gtf_path: str,
-    config: Config,
-):
-    status_entries: list[StatusEntry] = []
-
-    def _update_status(status: StatusEntry):
-        nonlocal status_entries
-        status_entries = [
-            *status_entries,
-            status,
-        ]
-        logger.warning(f"{status.progress}: {status.description}")
-        result_context.set_item(
-            StatusData(
-                label="PLP Result Status",
-                id="plp-result",
-                status=status_entries
-            )
-        )
-
-    try:
-        start_time = current_time()
-        with tempfile.TemporaryDirectory(prefix="plp-workdir") as workdir:
-            with cwd_context(workdir):
-                _update_status(
-                    StatusEntry(
-                        progress=0,
-                        description=f"config: {config}"
-                    )
-                )
-                _update_status(
-                    StatusEntry(
-                        progress=0,
-                        description=f"workdir: {workdir}"
-                    )
-                )
-
-                fa_path = os.path.join(workdir, f"{os.path.basename(src_fa_path)}")
-                os.symlink(src_fa_path, fa_path)
-                _update_status(
-                    StatusEntry(
-                        progress=0,
-                        description=f"fa_path: {src_fa_path}, {fa_path}"
-                    )
-                )
-
-                if os.path.isfile(src_indexed_fa_path):
-                    indexed_fa_path = os.path.join(workdir, f"{os.path.basename(src_indexed_fa_path)}")
-                    os.symlink(src_indexed_fa_path, indexed_fa_path)
-                    _update_status(
-                        StatusEntry(
-                            progress=0,
-                            description=f"indexed_fa_path: {src_indexed_fa_path}, {indexed_fa_path}"
-                        )
-                    )
-
-                gtf_path = os.path.join(workdir, f"{os.path.basename(src_gtf_path)}")
-                os.symlink(src_gtf_path, gtf_path)
-                _update_status(
-                    StatusEntry(
-                        progress=0,
-                        description=f"gtf_path: {src_gtf_path}, {gtf_path}"
-                    )
-                )
-
-                extracted_features_output_path = os.path.join(workdir, "extracted_features.txt")
-                transcriptome_output_path = os.path.join(workdir, "transcriptome.fa")
-                extracted_sequences_fa_output_path = os.path.join(workdir, "extracted_sequences.fa")
-                regions_output_path = os.path.join(workdir, "regions")
-                result_output_path = os.path.join(workdir, "result.csv")
-
-                _update_status(
-                    StatusEntry(
-                        progress=10,
-                        description=f"extracted_features: {config.genes}"
-                    )
-                )
-
-                extracted_features = extract_features(
-                    gtf=gtf_path,
-                    output=extracted_features_output_path,
-                    genes=config.genes,
-                    identifier_type=config.identifier_type,
-                )
-                _update_status(
-                    StatusEntry(
-                        progress=10,
-                        description=f"extracted_features: {current_time() - start_time}"
-                    )
-                )
-
-                extract_mrna(
-                    gtf_file=gtf_path,
-                    output_file=transcriptome_output_path,
-                    fasta_file=fa_path,
-                )
-                _update_status(
-                    StatusEntry(
-                        progress=20,
-                        description=f"extract_mrna: {current_time() - start_time}"
-                    )
-                )
-
-                extract_sequences(
-                    gtf_output=extracted_features_output_path,
-                    fasta=fa_path,
-                    output_fasta=extracted_sequences_fa_output_path,
-                    plp_length=config.plp_length,
-                    identifier_type=config.identifier_type,
-                    regions_file=regions_output_path
-                )
-                _update_status(
-                    StatusEntry(
-                        progress=40,
-                        description=f"extract_sequences: {current_time() - start_time}"
-                    )
-                )
-
-                targets_df = find_targets(
-                    selected_features=extracted_features_output_path,
-                    sequences_output=extracted_sequences_fa_output_path,
-                    output_file=result_output_path,
-                    reference_fasta=extracted_sequences_fa_output_path,
-                    min_coverage=config.min_coverage,
-                    gc_min=config.gc_min,
-                    gc_max=config.gc_max,
-                    num_probes=config.number_of_probes,
-                    iupac_mismatches=config.iupac_mismatches,
-                    max_errors=config.max_errors,
-                    check_specificity=config.check_probe_specificity,
-                    plp_length=config.plp_length,
-                    Tm_min=config.tm_min,
-                    Tm_max=config.tm_max,
-                    lowest_percentile_Tm_score_cutoff=config.lowest_percentile_tm_score_cutoff,
-                    min_dist_probes=config.minimum_prope_distance,
-                    filter_ligation_junction=config.filter_ligation_junction,
-                    off_target_output=config.off_target_output
-                )
-                _update_status(
-                    StatusEntry(
-                        progress=100,
-                        description=f"find_targets: {current_time() - start_time}"
-                    )
-                )
-
-                headers = {
-                    header: header
-                    for header in targets_df.columns.values
-                }
-                entries = [entry for entry in targets_df.to_dict(orient="records")]
-                result_context.set_item(
-                    TableData(
-                        id="plp-result",
-                        label="PLP Result",
-                        headers=headers,
-                        entries=entries,
-                    )
-                )
-
-    except Exception as e:
-        _update_status(
-            StatusEntry(
-                progress=100,
-                description=f"Search failed: {e}: {current_time() - start_time}"
-            )
-        )
 
 
 def create_adapter():
     return PLPAdapter(
-        genome_list_path=GENOME_LIST_PATH,
+        genome_repository=GenomeRepository(GENOME_LIST_PATH),
+        jobs_path=JOBS_PATH
     )
