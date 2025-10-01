@@ -83,6 +83,10 @@ class ResultManager:
         context.set_label(label)
         return context
 
+    def has_context(self, id: str):
+        path = self._get_result_path(id)
+        return os.path.exists(path)
+
     def get_context(self, id: str):
         path = self._get_result_path(id)
         url = self.__url_format.format(id=id)
