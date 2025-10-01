@@ -57,7 +57,7 @@ class JobQueue:
         job_done_path = os.path.join(self.jobs_done_path, job.id)
         os.rename(self._get_job_path(job), job_done_path)
         job.timestamp = datetime.datetime.now().timestamp()
-        self._write_job(job, self._get_job_path(job))
+        self._write_job(job, job_done_path)
 
     def _get_jobs(self, jobs_path: str):
         job_entries = sorted(
