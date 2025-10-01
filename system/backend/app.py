@@ -65,12 +65,6 @@ def create_app():
             job_queue=job_queue
         )
         result_context = result_manager.get_context(id=result.id)
-        for _i in range(wait_for_results_iterations):
-            if hasattr(result, "refresh_rate"):
-                time.sleep(result.refresh_rate / 1000)
-                result = result_context.get_result()
-            else:
-                return jsonify(result.model_dump())
 
         return jsonify(result.model_dump())
 
