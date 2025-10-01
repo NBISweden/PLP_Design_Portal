@@ -13,7 +13,7 @@ from .adapters.result_manager import (
     ResultManager,
     ResultContext
 )
-from datetime import datetime
+from datetime import datetime, timedelta
 from .adapters.plp_adapter import (
     PLPJob,
     PLPConfig,
@@ -35,6 +35,7 @@ GENOME_LIST_PATH = os.getenv("PLP_GENOME_LIST_PATH", "genome_list.json")
 JOBS_PATH = os.getenv("PLP_JOBS_PATH", "/tmp/jobs")
 JOBS_DONE_PATH = os.getenv("PLP_JOBS_DONE_PATH", "/tmp/jobs_done")
 NUMBER_OF_WORKERS = os.getenv("PLP_NUMBER_OF_WORKERS", "1")
+CLEAN_UP_PERIOD_SECONDS = os.getenv("PLP_CLEAN_UP_PERIOD_SECONDS", "3600")
 DEFERRED_RESULT_PATH = os.getenv("PLP_DEFERRED_RESULT_PATH", "/tmp/results")
 
 
@@ -56,7 +57,7 @@ class Runner:
         self._executor = ProcessPoolExecutor(max_workers=max_workers)
 
     def run(self, result_context: ResultContext, job: PLPJob):
-        print(f"Submitting job: {job.id}")
+        logger.info(f"Submitting job: {job.id}")
         return self._executor.submit(
             run_probe_design,
             self._genome_repository,
@@ -253,22 +254,58 @@ def current_time():
 
 
 def job_finisher(job_queue: JobQueue, job: Job):
-    def _job_finisher(_fut):
-        job_queue.finish_job(job)
+    def _job_finisher(task):
+        if task.done() and not task.cancelled() and not task.exception():
+            job_queue.finish_job(job)
 
     return _job_finisher
+
+
+def clean_up(job_queue: JobQueue, result_manager: ResultManager, min_end_date: datetime):
+    logger.info("Cleaning up results", min_end_date)
+    for job in job_queue.get_finished_jobs():
+        if job.end_date < min_end_date:
+            try:
+                logger.info(f"Removing old result: {job.target}")
+                result_manager.remove_context(job.target)
+            except FileNotFoundError:
+                pass
+
+            try:
+                logger.info(f"Removing old job: {job.id}")
+                job_queue.remove_job(job)
+            except FileNotFoundError:
+                pass
+
+
+def get_period_checker(period: timedelta):
+    last_update = None
+
+    def _period_checker():
+        nonlocal last_update
+        now = datetime.now()
+        if last_update is None or now - last_update > period:
+            last_update = now
+            return True
+        return False
+
+    return _period_checker
 
 
 def run(
     result_manager: ResultManager,
     runner: Runner,
-    job_queue: JobQueue
+    job_queue: JobQueue,
+    clean_up_period: timedelta
 ):
+    should_run_clean_up = get_period_checker(clean_up_period)
     for job in job_queue.job_stream():
-        context = result_manager.get_context(job.target)
-        logger.info(f"JOB: {job.id}")
-        future = runner.run(context, job)
+        if should_run_clean_up():
+            clean_up(job_queue, result_manager, datetime.now())
 
+        logger.info(f"JOB: {job.id}")
+        context = result_manager.get_context(job.target)
+        future = runner.run(context, job)
         future.add_done_callback(job_finisher(job_queue, job))
 
 
@@ -286,5 +323,6 @@ if __name__ == "__main__":
             job_type=PLPJob,
             jobs_path=JOBS_PATH,
             jobs_done_path=JOBS_DONE_PATH
-        )
+        ),
+        clean_up_period=timedelta(seconds=int(CLEAN_UP_PERIOD_SECONDS))
     )
