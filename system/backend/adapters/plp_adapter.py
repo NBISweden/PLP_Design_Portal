@@ -17,7 +17,7 @@ from .result_data import (
     StatusData,
     StatusEntry,
 )
-from .jobs import Job
+from .jobs import Job, JobQueue
 from .result_manager import ResultManager
 from plp_directrna_design.cli_utils import (
     parse_genes,
@@ -28,9 +28,11 @@ import logging
 from datetime import datetime
 
 
-GENOME_LIST_PATH = os.getenv("PLP_GENOME_LIST_PATH", "genome_list.json")
-JOBS_PATH = os.getenv("PLP_JOBS_PATH", "/tmp/jobs")
 logger = logging.getLogger(__name__)
+
+
+GENOME_LIST_PATH = os.getenv("PLP_GENOME_LIST_PATH", "genome_list.json")
+JOBS_DONE_PATH = os.getenv("PLP_JOBS_DONE_PATH", "/tmp/jobs_done")
 
 
 class PLPConfig(BaseModel):
@@ -135,9 +137,8 @@ PLPJob = Job[Literal["plp"], PLPConfig]
 class PLPAdapter:
     name = "plp_search"
 
-    def __init__(self, genome_repository: GenomeRepository, jobs_path: str):
+    def __init__(self, genome_repository: GenomeRepository):
         self._genome_repository = genome_repository
-        self._jobs_path = jobs_path
 
     @property
     def info(self):
@@ -394,7 +395,12 @@ class PLPAdapter:
             },
         ]
 
-    def run(self, data, result_manager: ResultManager) -> Result | DeferredResult | ErrorResult:
+    def run(
+        self,
+        data,
+        result_manager: ResultManager,
+        job_queue: JobQueue
+    ) -> Result | DeferredResult | ErrorResult:
         config, config_errors = self._parse_config(data)
 
         if config_errors is not None:
@@ -438,21 +444,16 @@ class PLPAdapter:
                 ]
             )
         )
-        self._submit(config, result_context.id)
-
-        return result_context.get_result()
-
-    def _submit(self, config, target: str):
         job: PLPJob = Job(
             id=self._get_job_id(),
             type="plp",
             timestamp=timestamp(),
             config=config,
-            target=target
+            target=result_context.id
         )
-        os.makedirs(self._jobs_path, exist_ok=True)
-        with open(f"{self._jobs_path}/{job.id}", "w") as f:
-            f.write(job.model_dump_json())
+        job_queue.submit_job(job)
+
+        return result_context.get_result()
 
     def _get_job_id(self) -> str:
         return str(uuid.uuid4())
@@ -517,6 +518,9 @@ def timestamp():
 
 def create_adapter():
     return PLPAdapter(
-        genome_repository=GenomeRepository(GENOME_LIST_PATH),
-        jobs_path=JOBS_PATH
+        genome_repository=GenomeRepository(GENOME_LIST_PATH)
     )
+
+
+def get_job_type():
+    return PLPJob
