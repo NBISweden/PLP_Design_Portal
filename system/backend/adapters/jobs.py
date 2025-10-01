@@ -27,6 +27,7 @@ class Job(BaseModel, Generic[TypeT, ConfigT]):
     def end_date(self):
         return datetime.datetime.fromtimestamp(self.timestamp + self.lifetime)
 
+
 class JobQueue:
     def __init__(self, job_type: Type, jobs_path: str, jobs_done_path: str):
         self.type_adapter = TypeAdapter(job_type)
@@ -37,7 +38,7 @@ class JobQueue:
         return self._get_jobs(self.jobs_path)
 
     def get_finished_jobs(self):
-        self._get_jobs(self.jobs_done_path)
+        return self._get_jobs(self.jobs_done_path)
 
     def job_stream(self, polling_time: float = 4) -> Generator[Job]:
         handled_jobs = set()
