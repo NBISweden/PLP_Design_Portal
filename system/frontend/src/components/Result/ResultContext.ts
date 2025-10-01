@@ -69,8 +69,11 @@ export function useCachingResultManager<T extends Entry>(
                             const updatedResults = await (
                                 deferredUrl ? client.result(ref).get() : Promise.resolve(result)
                             )
-                            cache.setResult(updatedResults);
-                            setUpdate(update + 1 % updateRotation);
+                            const currentResult = cache.getResult({id: ref.id})
+                            if (!("type" in currentResult)) {
+                                cache.setResult(updatedResults);
+                                setUpdate(update + 1 % updateRotation);
+                            }
                         } catch (e) {
                             console.log(e)
                         }
