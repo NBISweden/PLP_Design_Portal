@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 GENOME_LIST_PATH = os.getenv("PLP_GENOME_LIST_PATH", "genome_list.json")
 JOBS_PATH = os.getenv("PLP_JOBS_PATH", "/tmp/jobs")
 JOBS_DONE_PATH = os.getenv("PLP_JOBS_DONE_PATH", "/tmp/jobs_done")
+NUMBER_OF_WORKERS = os.getenv("PLP_NUMBER_OF_WORKERS", "1")
 DEFERRED_RESULT_PATH = os.getenv("PLP_DEFERRED_RESULT_PATH", "/tmp/results")
 
 
@@ -52,7 +53,7 @@ def cwd_context(target_cwd: str):
 class Runner:
     def __init__(self, genome_repository: GenomeRepository, max_workers=4):
         self._genome_repository = genome_repository
-        self._executor = ProcessPoolExecutor(max_workers=4)
+        self._executor = ProcessPoolExecutor(max_workers=max_workers)
 
     def run(self, result_context: ResultContext, job: PLPJob):
         print(f"Submitting job: {job.id}")
@@ -278,7 +279,8 @@ if __name__ == "__main__":
             result_root=DEFERRED_RESULT_PATH
         ),
         runner=Runner(
-            genome_repository=GenomeRepository(GENOME_LIST_PATH)
+            genome_repository=GenomeRepository(GENOME_LIST_PATH),
+            max_workers=int(NUMBER_OF_WORKERS)
         ),
         job_queue=JobQueue.create_with_directories(
             job_type=PLPJob,

@@ -3,7 +3,7 @@ ARG BACKEND_SRC_DIR=/opt/app
 ARG BACKEND_SCRIPTS=/opt/app_exec
 ARG BACKEND_SERVICE_DIR=/opt/app_service
 ARG BACKEND_SERVICE_NAME=PLP_directRNA_design_V2
-ARG BACKEND_PLP_GENOME_DATA_PATH=/home/plp_data
+ARG BACKEND_PLP_DATA_PATH=/home/plp_data
 ARG UID=1000
 ARG GID=1000
 
@@ -11,8 +11,11 @@ ARG GID=1000
 ########################################
 FROM python:3.13-alpine3.22 AS service_base
 ARG BACKEND_SERVICE_DIR
-ARG BACKEND_PLP_GENOME_DATA_PATH
-ENV PLP_GENOME_LIST_PATH="$BACKEND_PLP_GENOME_DATA_PATH/genome_list.json"
+ARG BACKEND_PLP_DATA_PATH
+ENV PLP_GENOME_LIST_PATH="$BACKEND_PLP_DATA_PATH/genome_list.json"
+ENV PLP_JOBS_PATH="$BACKEND_PLP_DATA_PATH/jobs"
+ENV PLP_DEFERRED_RESULT_PATH="$BACKEND_PLP_DATA_PATH/results"
+ENV PLP_JOBS_DONE_PATH="$BACKEND_PLP_DATA_PATH/jobs_done"
 
 # Set environment variables to prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -108,12 +111,12 @@ RUN npm run build
 FROM base AS prod
 ARG UID
 ARG FRONTEND_SRC_DIR
-ARG BACKEND_PLP_GENOME_DATA_PATH
+ARG BACKEND_PLP_DATA_PATH
 
 COPY --from=system backend/ ./backend
 COPY --from=builder "$FRONTEND_SRC_DIR/dist/" frontend/
-RUN mkdir -p "$BACKEND_PLP_GENOME_DATA_PATH"
-RUN chmod o+r "$BACKEND_PLP_GENOME_DATA_PATH"
+RUN mkdir -p "$BACKEND_PLP_DATA_PATH"
+RUN chmod o+r "$BACKEND_PLP_DATA_PATH"
 
 COPY --chown=$UID --chmod=444 containers/caddy/Caddyfile ./Caddyfile
 COPY --chown=$UID --chmod=555 containers/scripts/start-script.sh ./start-script.sh
