@@ -25,7 +25,7 @@ from plp_directrna_design.cli_utils import (
 )
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 logger = logging.getLogger(__name__)
@@ -449,7 +449,8 @@ class PLPAdapter:
             type="plp",
             timestamp=timestamp(),
             config=config,
-            target=result_context.id
+            target=result_context.id,
+            lifetime=timedelta(days=14).total_seconds()
         )
         job_queue.submit_job(job)
 
