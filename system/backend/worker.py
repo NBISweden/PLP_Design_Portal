@@ -1,11 +1,8 @@
-from pydantic import TypeAdapter, ValidationError
 from plp_directrna_design.cli_utils import (
     extract_features,
     extract_mrna,
     extract_sequences,
     find_targets,
-    parse_genes,
-    parse_iupac_mismatches,
 )
 from .adapters.result_data import (
     StatusData,
@@ -17,11 +14,13 @@ from .adapters.result_manager import (
     ResultContext
 )
 from datetime import datetime
-from .adapters.plp_adapter import PLPJob, PLPConfig, GenomeRepository
-from typing import Generator
-from .adapters.jobs import Job
+from .adapters.plp_adapter import (
+    PLPJob,
+    PLPConfig,
+    GenomeRepository
+)
+from .adapters.jobs import Job, JobQueue
 import contextlib
-import time
 import os
 import logging
 import tempfile
@@ -34,41 +33,8 @@ logger = logging.getLogger(__name__)
 
 GENOME_LIST_PATH = os.getenv("PLP_GENOME_LIST_PATH", "genome_list.json")
 JOBS_PATH = os.getenv("PLP_JOBS_PATH", "/tmp/jobs")
-ACTIVE_JOBS_PATH = os.getenv("PLP_ACTIVE_JOBS_PATH", "/tmp/acive_jobs")
+JOBS_DONE_PATH = os.getenv("PLP_JOBS_DONE_PATH", "/tmp/jobs_done")
 DEFERRED_RESULT_PATH = os.getenv("PLP_DEFERRED_RESULT_PATH", "/tmp/results")
-
-
-job_adapter = TypeAdapter(PLPJob)
-
-
-def job_sorting_key(entry):
-    return entry.stat().st_mtime
-
-
-def job_stream(jobs_path: str, polling_time=10) -> Generator[PLPJob, None, None]:
-    black_list = set()
-    while True:
-        entries = sorted(
-            [
-                entry
-                for entry in os.scandir(jobs_path)
-                if entry.is_file() and entry.path not in black_list
-            ],
-            key=job_sorting_key
-        )
-        for current_job in entries:
-            try:
-                job = None
-                with open(current_job.path, "r") as f:
-                    job = job_adapter.validate_json(f.read())
-                print(f"Stream: {job.id}")
-                yield (job, current_job.path)
-            except (OSError, ValidationError, IndexError):
-                if current_job:
-                    black_list.add(current_job.path)
-
-        logger.info(f"Waiting to poll jobs: {polling_time}")
-        time.sleep(polling_time)
 
 
 @contextlib.contextmanager
@@ -90,7 +56,7 @@ class Runner:
 
     def run(self, result_context: ResultContext, job: PLPJob):
         print(f"Submitting job: {job.id}")
-        self._executor.submit(
+        return self._executor.submit(
             run_probe_design,
             self._genome_repository,
             result_context,
@@ -285,22 +251,24 @@ def current_time():
     return datetime.now().timestamp()
 
 
+def job_finisher(job_queue: JobQueue, job: Job):
+    def _job_finisher(_fut):
+        job_queue.finish_job(job)
+
+    return _job_finisher
+
+
 def run(
     result_manager: ResultManager,
     runner: Runner,
-    jobs_path: str,
-    active_jobs_path: str,
-    polling_time: int = 10
+    job_queue: JobQueue
 ):
-    os.makedirs(jobs_path, exist_ok=True)
-    os.makedirs(active_jobs_path, exist_ok=True)
-    for (job, job_path) in job_stream(jobs_path):
+    for job in job_queue.job_stream():
         context = result_manager.get_context(job.target)
-        os.rename(job_path, os.path.join(active_jobs_path, job.id))
         logger.info(f"JOB: {job.id}")
-        logger.info(job, job_path)
-        runner.run(context, job)
-        time.sleep(polling_time)
+        future = runner.run(context, job)
+
+        future.add_done_callback(job_finisher(job_queue, job))
 
 
 if __name__ == "__main__":
@@ -312,6 +280,9 @@ if __name__ == "__main__":
         runner=Runner(
             genome_repository=GenomeRepository(GENOME_LIST_PATH)
         ),
-        jobs_path=JOBS_PATH,
-        active_jobs_path=ACTIVE_JOBS_PATH,
+        job_queue=JobQueue.create_with_directories(
+            job_type=PLPJob,
+            jobs_path=JOBS_PATH,
+            jobs_done_path=JOBS_DONE_PATH
+        )
     )
