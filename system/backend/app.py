@@ -32,8 +32,9 @@ def make_error(message):
 def create_app():
     wait_for_results_iterations = 1
     os.makedirs(DEFERRED_RESULT_PATH, exist_ok=True)
+    deferred_url_format = "/api/deferred/{id}"
     result_manager = ResultManager(
-        url_format="/api/deferred/{id}",
+        url_format=deferred_url_format,
         result_root=DEFERRED_RESULT_PATH
     )
     adapter = create_adapter()
@@ -76,15 +77,42 @@ def create_app():
     @app.route('/api/deferred/<result_id>')
     def deferred_result(result_id: str):
         try:
-            result_context = result_manager.get_context(id=result_id)
-            if result_context is None:
+            if result_manager.has_context(id=result_id):
+                result_context = result_manager.get_context(id=result_id)
+                return jsonify(result_context.get_result().model_dump())
+            else:
                 logger.info("Failed to get result: Result context not found")
                 return make_error(f"The result could not be found for: {result_id}")
-            else:
-                return jsonify(result_context.get_result().model_dump())
         except ValueError as e:
             logger.info(f"Failed to get result: {e}")
             return make_error(f"The result could not be found for: {result_id}")
+
+    @app.route('/api/queue/status')
+    def queue_status():
+        jobs_in_queue = [
+            {
+                "type": job.type,
+                "startDate": job.date.isoformat(),
+                "endDate": job.end_date.isoformat(),
+                "resultUrl": deferred_url_format.format(id=job.target),
+                "status": "in-queue",
+            }
+            for job in job_queue.get_jobs()
+        ]
+        jobs_finished = [
+            {
+                "type": job.type,
+                "startDate": job.date.isoformat(),
+                "endDate": job.end_date.isoformat(),
+                "resultUrl": deferred_url_format.format(id=job.target),
+                "status": "finished",
+            }
+            for job in job_queue.get_finished_jobs()
+        ]
+        return jsonify([
+            *jobs_in_queue,
+            *jobs_finished
+        ])
 
     @app.route('/config/config.json')
     def config():
