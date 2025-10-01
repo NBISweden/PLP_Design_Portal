@@ -444,28 +444,23 @@ class PLPAdapter:
                 ]
             )
         )
-        job: PLPJob = Job(
-            id=self._get_job_id(),
-            type="plp",
-            timestamp=timestamp(),
-            config=config,
-            target=result_context.id,
-            lifetime=timedelta(days=14).total_seconds()
-        )
-        job_queue.submit_job(job)
+        if config is not None:
+            job: PLPJob = Job(
+                id=self._get_job_id(),
+                type="plp",
+                timestamp=timestamp(),
+                config=config,
+                target=result_context.id,
+                lifetime=timedelta(days=14).total_seconds()
+            )
+            job_queue.submit_job(job)
 
         return result_context.get_result()
 
     def _get_job_id(self) -> str:
         return str(uuid.uuid4())
 
-    def _abs_genome_path(self, path: str) -> str:
-        genome_root = os.path.dirname(self._genome_list_path)
-        return os.path.normpath(
-            os.path.join(genome_root, path)
-        )
-
-    def _parse_config(self, data: dict) -> PLPConfig:
+    def _parse_config(self, data: dict) -> Tuple[PLPConfig, None] | Tuple[None, List[Tuple[str, str]]]:
         try:
             config = PLPConfig.model_validate(
                 data,
@@ -477,7 +472,7 @@ class PLPAdapter:
                 logger.warn(e)
             return (
                 None,
-                [(e["loc"][0], f"{e['msg']}: {e['type']}") for e in error.errors()]
+                [(str(e["loc"][0]), f"{e['msg']}: {e['type']}") for e in error.errors()]
             )
 
     def _noparse(self, data):

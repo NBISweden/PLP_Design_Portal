@@ -5,7 +5,6 @@ from flask import (
     make_response,
 )
 import os
-import time
 import logging
 from flask_compress import Compress  # type: ignore
 from .adapters.plp_adapter import create_adapter, get_job_type
@@ -30,7 +29,6 @@ def make_error(message):
 
 
 def create_app():
-    wait_for_results_iterations = 1
     os.makedirs(DEFERRED_RESULT_PATH, exist_ok=True)
     deferred_url_format = "/api/deferred/{id}"
     result_manager = ResultManager(
@@ -64,7 +62,6 @@ def create_app():
             result_manager=result_manager,
             job_queue=job_queue
         )
-        result_context = result_manager.get_context(id=result.id)
 
         return jsonify(result.model_dump())
 

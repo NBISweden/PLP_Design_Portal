@@ -45,7 +45,6 @@ class JobQueue:
         while True:
             for job in self.get_jobs():
                 if job.id not in handled_jobs:
-                    print(f"Stream: {job.id}")
                     yield job
                     handled_jobs.add(job.id)
             time.sleep(polling_time)
@@ -58,6 +57,14 @@ class JobQueue:
         os.rename(self._get_job_path(job), job_done_path)
         job.timestamp = datetime.datetime.now().timestamp()
         self._write_job(job, job_done_path)
+
+    def remove_job(self, job: Job):
+        job_done_path = os.path.join(self.jobs_done_path, job.id)
+        if os.path.exists(job_done_path):
+            os.remove(job_done_path)
+        job_path = self._get_job_path(job)
+        if os.path.exists(job_path):
+            os.remove(job_path)
 
     def _get_jobs(self, jobs_path: str):
         job_entries = sorted(

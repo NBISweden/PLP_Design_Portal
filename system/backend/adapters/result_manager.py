@@ -91,3 +91,7 @@ class ResultManager:
         path = self._get_result_path(id)
         url = self.__url_format.format(id=id)
         return ResultContext(id=id, url=url, path=path, refresh_rate=5000)
+
+    def remove_context(self, id: str):
+        path = self._get_result_path(id)
+        os.remove(path)
