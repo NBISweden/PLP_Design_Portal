@@ -11,4 +11,5 @@ install -d "$XDG_DATA_HOME"
 
 SCRIPTDIR=`dirname "$0"`
 caddy start --config "$SCRIPTDIR/Caddyfile"
+python -m backend.worker &
 exec flask --app backend/app.py --debug run --host 0.0.0.0 --port 5000
