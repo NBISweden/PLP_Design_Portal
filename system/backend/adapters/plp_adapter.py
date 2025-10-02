@@ -47,6 +47,7 @@ class PLPConfig(BaseModel):
     max_errors: Annotated[int, Field(ge=1, le=6)] = 4
     tm_min: int = 58
     tm_max: int = 62
+    no_limit_tm: bool = False
     lowest_percentile_tm_score_cutoff: Annotated[int, Field(ge=1, le=100)] = 5
     minimum_prope_distance: int = 8
     filter_ligation_junction: bool = True
@@ -219,13 +220,19 @@ class PLPAdapter:
                 "default": 5
             },
             {
+                "id": "no_limit_tm",
+                "type": "yesno",
+                "options": ["true", "false"],
+                "default": "false"
+            },
+            {
                 "id": "minimum_prope_distance",
                 "type": "number",
                 "default": 8
             },
             {
                 "id": "filter_ligation_junction",
-                "type": "choice",
+                "type": "yesno",
                 "options": ["true", "false"],
                 "default": "true"
             },
@@ -236,13 +243,13 @@ class PLPAdapter:
             },
             {
                 "id": "off_target_output",
-                "type": "choice",
+                "type": "yesno",
                 "options": ["true", "false"],
                 "default": "false"
             },
             {
                 "id": "check_probe_specificity",
-                "type": "choice",
+                "type": "yesno",
                 "options": ["true", "false"],
                 "default": "false"
             },
@@ -276,6 +283,7 @@ class PLPAdapter:
                             "find_targets": "Find Targets",
                             "extract_sequences": "Extract Sequences",
                             "extract_features": "Extract Features",
+                            "tm_limits": "Tm Limits",
                         },
                         "content": {
                             "extras_info": "The following fields may cause the calculations to take significantly longer, so use with care."
@@ -300,6 +308,7 @@ class PLPAdapter:
                         "iupac_mismatches.label": "IUPAC Mismatches",
                         "max_errors.label": "Max Number of Errors",
                         "check_probe_specificity.label": "Check Probe Specificity",
+                        "no_limit_tm.label": "Do not limit Tm",
                         "tm_min.label": "Tm Min",
                         "tm_max.label": "Tm Max",
                         "lowest_percentile_tm_score_cutoff.label": "Lowest percentile Tm Score Cutoff",
@@ -319,63 +328,35 @@ class PLPAdapter:
         return [
             {
                 "id": "general",
-                "fields": [
-                    {
-                        "type": "field",
-                        "id": field_id,
-                    }
-                    for field_id in ["genome", "identifier_type"]
-                ]
+                "fields": fields_from_id_list(["genome", "identifier_type"])
             },
             {
                 "id": "extract_features",
-                "fields": [
-                    {
-                        "type": "field",
-                        "id": field_id,
-                    }
-                    for field_id in ["genes"]
-                ]
+                "fields": fields_from_id_list(["genes"])
             },
             {
                 "id": "extract_sequences",
-                "fields": [
-                    {
-                        "type": "field",
-                        "id": field_id,
-                    }
-                    for field_id in ["plp_length"]
-                ]
+                "fields": fields_from_id_list(["plp_length"])
             },
             {
                 "id": "find_targets",
-                "fields": [
-                    (
-                        [
-                            {
-                                "type": "field",
-                                "id": field_id,
-                            }
-                            for field_id in field_id_or_list
-                        ]
-                        if isinstance(field_id_or_list, list)
-                        else {
-                            "type": "field",
-                            "id": field_id_or_list,
-                        }
-                    )
-                    for field_id_or_list in [
-                        "number_of_probes",
-                        "iupac_mismatches",
-                        "max_errors",
-                        "min_coverage",
-                        ["gc_min", "gc_max"],
-                        ["tm_min", "tm_max"],
-                        "lowest_percentile_tm_score_cutoff",
-                        "minimum_prope_distance",
-                        "filter_ligation_junction",
-                    ]
-                ]
+                "fields": fields_from_id_list([
+                    "number_of_probes",
+                    "iupac_mismatches",
+                    "max_errors",
+                    "min_coverage",
+                    ["gc_min", "gc_max"],
+                    "minimum_prope_distance",
+                    "filter_ligation_junction",
+                ])
+            },
+            {
+                "id": "tm_limits",
+                "fields": fields_from_id_list([
+                    "no_limit_tm",
+                    ["tm_min","tm_max"],
+                    "lowest_percentile_tm_score_cutoff",
+                ]),
             },
             {
                 "id": "extras",
@@ -384,13 +365,7 @@ class PLPAdapter:
                         "type": "content",
                         "id": "extras_info"
                     },
-                    [
-                        {
-                            "type": "field",
-                            "id": field_id,
-                        }
-                        for field_id in ["check_probe_specificity", "off_target_output"]
-                    ]
+                    fields_from_id_list(["check_probe_specificity", "off_target_output"])
                 ]
             },
         ]
@@ -493,6 +468,26 @@ class PLPAdapter:
             if isinstance(data, bool)
             else data == "true"
         )
+
+
+def fields_from_id_list(field_id_list: List[List[str] | str]):
+    return [
+        (
+            [
+                {
+                    "type": "field",
+                    "id": field_id,
+                }
+                for field_id in field_id_or_list
+            ]
+            if isinstance(field_id_or_list, list)
+            else {
+                "type": "field",
+                "id": field_id_or_list,
+            }
+        )
+        for field_id_or_list in field_id_list
+    ]
 
 
 def create_enum_parser(values: set[str]):
