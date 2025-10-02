@@ -8,7 +8,7 @@ export type FieldDef = {
 } & ({
     type: "choice",
     options: string[] | number[];
-    default?: string;
+    default?: string | number;
 } | {
     type: "text";
     default?: string;
@@ -19,7 +19,8 @@ export type FieldDef = {
     placeholder?: number;
 } | {
     type: "yesno";
-    default?: boolean;
+    options: string[] | number[];
+    default?: string | number;
 });
 
 

@@ -22,7 +22,12 @@ export function Service() {
         event.stopPropagation();
         const values = fieldDefs.reduce<{[x: string]: string}>((acc, fd) => {
             const target = (event.target as any)[fd.id]; // eslint-disable-line
-            const value = target.type === "checkbox" ? !!target.checked : target.value;
+            const dataValue = target.getAttribute("data-selected-value");
+            const value = (
+                dataValue === null
+                ? (target.type === "checkbox" ? !!target.checked : target.value)
+                : dataValue
+            );
             acc[fd.id] = `${value}`;
             return acc;
         }, {});
