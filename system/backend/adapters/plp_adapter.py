@@ -207,17 +207,26 @@ class PLPAdapter:
             {
                 "id": "tm_min",
                 "type": "number",
-                "default": 58
+                "default": 58,
+                "conditions": [
+                    "no_limit_tm=true"
+                ]
             },
             {
                 "id": "tm_max",
                 "type": "number",
                 "default": 62,
+                "conditions": [
+                    "no_limit_tm=true"
+                ]
             },
             {
                 "id": "lowest_percentile_tm_score_cutoff",
                 "type": "number",
-                "default": 5
+                "default": 5,
+                "conditions": [
+                    "no_limit_tm=true"
+                ]
             },
             {
                 "id": "no_limit_tm",
@@ -354,7 +363,7 @@ class PLPAdapter:
                 "id": "tm_limits",
                 "fields": fields_from_id_list([
                     "no_limit_tm",
-                    ["tm_min","tm_max"],
+                    ["tm_min", "tm_max"],
                     "lowest_percentile_tm_score_cutoff",
                 ]),
             },

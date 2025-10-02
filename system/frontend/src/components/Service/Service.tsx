@@ -2,6 +2,7 @@ import { FormEventHandler, useState, useContext } from "react";
 import { FieldContext, DisableFieldManager } from "../Fields";
 import { useClient} from "../../modules/Client";
 import { ErrorContext, useStaticErrorManager } from "../../modules/ErrorContext";
+import { useFormManager, FormContext } from "../../modules/FormContext";
 import { Form } from "../Form/Form";
 import { useResults } from "../Result/ResultContext";
 import { useNavigate } from "react-router-dom";
@@ -63,23 +64,26 @@ export function Service() {
         });
     }
     const fieldManager = isWaiting ? new DisableFieldManager(fieldContext) : fieldContext;
+    const formManager = useFormManager();
     return (
-        <section className="section has-background-custom-grey-light">
-            <div className="container">
-                <h2 className="title is-size-4-mobile has-text-centered">{t("service.title")}</h2>
-                <div className="columns is-centered">
-                    <div className="column is-two-thirds">
-                        <FieldContext.Provider value={fieldManager}>
-                            <ErrorContext.Provider value={errorManager}>
-                                <Form handleSubmit={handleSubmit} layout={client.layout}/>
-                            </ErrorContext.Provider>
-                        </FieldContext.Provider>
-                        <hr />
-                        {isWaiting ? t("service.waiting_for_results") : <></>}
+        <FormContext.Provider value={formManager}>
+            <section className="section has-background-custom-grey-light">
+                <div className="container">
+                    <h2 className="title is-size-4-mobile has-text-centered">{t("service.title")}</h2>
+                    <div className="columns is-centered">
+                        <div className="column is-two-thirds">
+                            <FieldContext.Provider value={fieldManager}>
+                                <ErrorContext.Provider value={errorManager}>
+                                    <Form handleSubmit={handleSubmit} layout={client.layout}/>
+                                </ErrorContext.Provider>
+                            </FieldContext.Provider>
+                            <hr />
+                            {isWaiting ? t("service.waiting_for_results") : <></>}
+                        </div>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
+        </FormContext.Provider>
     )
 }
 

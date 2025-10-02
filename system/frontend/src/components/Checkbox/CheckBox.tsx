@@ -3,45 +3,68 @@ import './Checkbox.css'
 
 type Option = {label?: string, value: string | number};
 
-interface Props {
+type BaseProps = {
     label: string;
     required?: boolean;
     name?: string;
     options: [Option, Option];
-    defaultValue?: Option["value"];
     disabled?: boolean;
 }
 
-export function CheckBox({label, required, options, name, defaultValue, disabled}: Props) {
+type StatefulProps = BaseProps & {
+    defaultValue?: Option["value"];
+}
+
+type Props = BaseProps & {
+    onChange: (value: Option["value"]) => void;
+    value: Option["value"];
+}
+
+export function StatefulCheckBox({label, required, options, name, defaultValue, disabled}: StatefulProps) {
+    const primary = options[0];
+    const [value, setValue] = useState(defaultValue || primary.value);
+
+    return (
+        <CheckBox
+            label={label}
+            required={required}
+            name={name}
+            options={options}
+            disabled={disabled}
+            onChange={setValue}
+            value={value}
+        />
+    )
+}
+
+export function CheckBox({label, required, options, name, disabled, onChange, value}: Props) {
     const id = React.useId()
     const primary = options[0];
     const secondary = options[1];
-    const [value, setValue] = useState(defaultValue || primary.value);
     const handleChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-        setValue(
+        onChange(
             event.currentTarget.checked ? primary.value : secondary.value
         )
-    }, [primary, secondary, setValue])
+    }, [primary, secondary, onChange]);
+
     return (
-        <>
-            <div className="field">
-                <div className="control">
-                    <label className="checkbox mr-3" htmlFor={id}>
-                        {label}
-                    </label>
-                    <input
-                        type="checkbox"
-                        id={id}
-                        name={name}
-                        checked={value === primary.value}
-                        required={required}
-                        onChange={handleChange}
-                        className="plp-checkbox"
-                        disabled={disabled}
-                        data-selected-value={value}
-                    />
-                </div>
+        <div className="field">
+            <div className="control">
+                <label className="checkbox mr-3" htmlFor={id}>
+                    {label}
+                </label>
+                <input
+                    type="checkbox"
+                    id={id}
+                    name={name}
+                    checked={value === primary.value}
+                    required={required}
+                    onChange={handleChange}
+                    className="plp-checkbox"
+                    disabled={disabled}
+                    data-selected-value={value}
+                />
             </div>
-        </>
+        </div>
     )
 }
