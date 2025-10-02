@@ -212,9 +212,9 @@ def run_probe_design(
                     max_errors=config.max_errors,
                     check_specificity=config.check_probe_specificity,
                     plp_length=config.plp_length,
-                    Tm_min=config.tm_min,
-                    Tm_max=config.tm_max,
-                    lowest_percentile_Tm_score_cutoff=config.lowest_percentile_tm_score_cutoff,
+                    Tm_min=None if config.no_limit_tm else config.tm_min,
+                    Tm_max=None if config.no_limit_tm else config.tm_max,
+                    lowest_percentile_Tm_score_cutoff=None if config.no_limit_tm else config.lowest_percentile_tm_score_cutoff,
                     min_dist_probes=config.minimum_prope_distance,
                     filter_ligation_junction=config.filter_ligation_junction,
                     off_target_output=config.off_target_output
