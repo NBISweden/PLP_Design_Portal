@@ -1,5 +1,5 @@
 import {Field, WidgetProps} from "../Field/Field";
-import {InputField} from "../InputField/InputField";
+import {StatefulInputField} from "../InputField/InputField";
 import {FormEventHandler, Fragment} from "react";
 import "./Form.css";
 import { useTranslation } from "react-i18next";
@@ -35,7 +35,7 @@ export type FormLayout = LayoutGroup[]
 function FormField(field: FieldRef) {
     const widget = field.widget;
     const extras = widget ? {
-        widget: (props: WidgetProps) => (<InputField {...props} {...widget}/>)
+        widget: (props: WidgetProps) => (<StatefulInputField {...props} {...widget}/>)
     } : {};
     return <Field id={field.id} {...extras}/>
 }

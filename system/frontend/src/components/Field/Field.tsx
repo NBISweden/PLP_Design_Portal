@@ -1,8 +1,9 @@
-import { InputField, CheckBox, DropDown} from "../Fields"
+import { InputField, DropDown, CheckBox, StatefulInputField, StatefulCheckBox, StatefulDropDown} from "../Fields"
 import { useField, FieldDef } from "./FieldContext";
 import { useTranslation } from "react-i18next";
 import { getErrorMessage } from "../../modules/utils";
 import { useFieldErrors } from "../../modules/ErrorContext";
+import { useFormFieldValue, useFormContext } from "../../modules/FormContext";
 
 export type WidgetProps = {
     label: string,
@@ -18,9 +19,16 @@ export type WidgetProps = {
     }[]
 }
 
+function checkCondition(condition: string, state: Record<string, string | number>): boolean {
+    return Object.entries(state).map(([key, value]) => `${key}=${value}`).includes(condition);
+}
+
 export function FieldView(props: {
     fieldDef: FieldDef,
-    widget?: (props: WidgetProps) => JSX.Element
+    widget?: (props: WidgetProps) => JSX.Element,
+    disabled?: boolean,
+    onChange?: (value: string | number) => void,
+    value?: string | number,
 }) {
     const {t} = useTranslation();
     const fieldDef = props.fieldDef;
@@ -42,26 +50,43 @@ export function FieldView(props: {
     );
     const required = fieldDef.required === undefined ? false : fieldDef.required;
 
+    const disabled = props.disabled || fieldDef.disabled;
     if (widget !== undefined) {
         const defaultValue = fieldDef.default;
         return widget({label, type: fieldDef.type, name, disabled: fieldDef.disabled, default: defaultValue, options, placeholder, required})
+    } else if (props.onChange) {
+        const {onChange, value} = props;
+        switch (fieldDef.type) {
+            case "choice": {
+                return <DropDown onChange={onChange} value={value === undefined ? options[0]?.value : value} label={label} name={name} options={options} required={required} disabled={disabled}/>
+            }
+            case "number": {
+                return <InputField onChange={onChange} value={value === undefined ? "" : value} type="number" name={name} label={label} placeholder={placeholder} required={required} disabled={disabled}/>
+            }
+            case "text": {
+                return <InputField onChange={onChange} value={value === undefined ? 0 : value} type="text" name={name} label={label} placeholder={fieldDef.placeholder} required={required} disabled={disabled}/>
+            }
+            case "yesno": {
+                return <CheckBox onChange={onChange} value={value === undefined ? options[0]?.value : value} name={name} label={label} options={[options[0], options[1]]} required={required} disabled={disabled}/>
+            }
+        }
     } else {
         switch (fieldDef.type) {
             case "choice": {
                 const defaultValue = fieldDef.default;
-                return <DropDown label={label} name={name} defaultValue={defaultValue} options={options} required={required} disabled={fieldDef.disabled}/>
+                return <StatefulDropDown label={label} name={name} defaultValue={defaultValue} options={options} required={required} disabled={disabled}/>
             }
             case "number": {
                 const defaultValue = fieldDef.default;
-                return <InputField type="number" name={name} defaultValue={defaultValue} label={label} placeholder={placeholder} required={required} disabled={fieldDef.disabled}/>
+                return <StatefulInputField type="number" name={name} defaultValue={defaultValue} label={label} placeholder={placeholder} required={required} disabled={disabled}/>
             }
             case "text": {
                 const defaultValue = fieldDef.default;
-                return <InputField type="text" name={name} defaultValue={defaultValue} label={label} placeholder={fieldDef.placeholder} required={required} disabled={fieldDef.disabled}/>
+                return <StatefulInputField type="text" name={name} defaultValue={defaultValue} label={label} placeholder={fieldDef.placeholder} required={required} disabled={disabled}/>
             }
             case "yesno": {
                 const defaultValue = fieldDef.default;
-                return <CheckBox name={name} label={label} options={[options[0], options[1]]} defaultValue={defaultValue} required={required} disabled={fieldDef.disabled}/>
+                return <StatefulCheckBox name={name} label={label} options={[options[0], options[1]]} defaultValue={defaultValue} required={required} disabled={disabled}/>
             }
         }
     }
@@ -80,7 +105,6 @@ export function MissingField({id, message}: {id: string, message: string}) {
     )
 }
 
-
 export function Field(props: {
     id: string,
     widget?: (props: WidgetProps) => JSX.Element
@@ -88,11 +112,24 @@ export function Field(props: {
     const {t} = useTranslation();
     const {id, widget} = props;
     const errors = useFieldErrors(id);
+    const formManager = useFormContext();
+    const [value, setValue] = useFormFieldValue(id);
+    const fieldDef = useField(id);
     try {
-        const fieldDef = useField(id);
+        const disabled = (
+            formManager &&
+            fieldDef.conditions &&
+            fieldDef.conditions.length > 0 
+            ? fieldDef.conditions.some((c) => checkCondition(c, formManager.state))
+            : undefined
+        );
+        const valueHandlers = setValue !== null ? {
+            onChange: setValue,
+            value: value || fieldDef.default,
+        } : {};
         return (
             <>
-                <FieldView fieldDef={fieldDef} widget={widget}/>
+                <FieldView fieldDef={fieldDef} widget={widget} {...valueHandlers} disabled={disabled}/>
                 {errors.length > 0 ? <div className="p-2 has-background-warning has-text-white">
                     <ul>
                         {errors.map((error, index) => (<li key={index}>{t(error.id, error.description || error.id)}</li>))}

@@ -5,6 +5,7 @@ export type FieldDef = {
     id: string;
     required?: boolean;
     disabled?: boolean;
+    conditions?: string[];
 } & ({
     type: "choice",
     options: string[] | number[];
@@ -43,7 +44,7 @@ export class StaticFieldManager implements FieldManager {
 
     getField(id: string, type?: FieldDef["type"]) {
         const fieldDefs = this._fields;
-    
+
         const fieldDef: FieldDef | undefined = fieldDefs.filter(
             fd => fd.id === id && (!type || fd.type === type)
         )[0];
