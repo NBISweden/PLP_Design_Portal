@@ -28,7 +28,7 @@ export function FieldView(props: {
     const label = t(`fields.${fieldDef.id}.label`);
     const name = fieldDef.id;
     const options = (
-        fieldDef.type == "choice"
+        fieldDef.type === "choice" || fieldDef.type === "yesno"
         ? fieldDef.options.map(o => ({
             value: o,
             label: t(`fields.${fieldDef.id}.options.${o}`, `${o}`)
@@ -61,7 +61,7 @@ export function FieldView(props: {
             }
             case "yesno": {
                 const defaultValue = fieldDef.default;
-                return <CheckBox name={name} label={label} defaultValue={defaultValue} required={required} disabled={fieldDef.disabled}/>
+                return <CheckBox name={name} label={label} options={[options[0], options[1]]} defaultValue={defaultValue} required={required} disabled={fieldDef.disabled}/>
             }
         }
     }
