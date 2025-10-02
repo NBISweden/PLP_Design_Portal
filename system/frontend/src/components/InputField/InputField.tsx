@@ -1,4 +1,4 @@
-import React, {ChangeEvent, useCallback, useState} from "react";
+import React, {FocusEvent, useCallback, useState} from "react";
 import './InputField.css'
 
 type BaseProps = ({
@@ -46,7 +46,7 @@ export function StatefulInputField(props: StatefulProps) {
 export function InputField(props: Props) {
     const {label, required, name, placeholder, disabled, value, onChange} = props;
     const id = React.useId();
-    const handleChange = useCallback((event: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLTextAreaElement>) => {
+    const handleBlur = useCallback((event: FocusEvent<HTMLInputElement> | FocusEvent<HTMLTextAreaElement>) => {
         const newValue = props.type === "number" ? parseFloat(event.target.value) : event.target.value;
         onChange(newValue)
     }, [onChange, props.type]);
@@ -59,9 +59,9 @@ export function InputField(props: Props) {
                         id={id}
                         name={name}
                         rows={props.rows}
-                        value={value}
-                        onChange={handleChange}
+                        defaultValue={value}
                         required={required}
+                        onBlur={handleBlur}
                         className="textarea"
                         placeholder={placeholder}
                         disabled={disabled}
@@ -71,8 +71,8 @@ export function InputField(props: Props) {
                         type={props.type}
                         id={id}
                         name={name}
-                        value={value}
-                        onChange={handleChange}
+                        defaultValue={value}
+                        onBlur={handleBlur}
                         required={required}
                         className="input"
                         placeholder={placeholder}
