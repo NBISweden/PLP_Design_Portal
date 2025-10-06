@@ -8,11 +8,21 @@ from .result_data import (
     StatusData,
     StatusEntry,
 )
+from .jobs import Job
+from pydantic import BaseModel
+from typing import Literal
 import json
 import os
 import random
 import uuid
 from datetime import datetime
+
+
+class MockConfig(BaseModel):
+    value: int
+
+
+MockJob = Job[Literal["mock"], MockConfig]
 
 
 class MockAdapter:
@@ -49,7 +59,12 @@ class MockAdapter:
         "version": "0.0.1"
     }
 
-    def run(self, data, result_manager) -> Result | DeferredResult | ErrorResult:
+    def run(
+        self,
+        data,
+        result_manager,
+        job_queue
+    ) -> Result | DeferredResult | ErrorResult:
         unique_id = str(uuid.uuid4())
         self._last_data = data
         field_ids = [field["id"] for field in self._fields]
@@ -117,5 +132,9 @@ def load_json(path):
         return json.load(f)
 
 
-def create_adapter(data_directory: str = "data"):
+def create_adapter(data_directory: str = "backend/data"):
     return MockAdapter(data_directory)
+
+
+def get_job_type():
+    return MockJob

@@ -1,7 +1,6 @@
 from flask import (
     Flask,
     jsonify,
-    send_file,
     request,
     make_response,
 )
@@ -9,8 +8,14 @@ import os
 import time
 import logging
 from flask_compress import Compress  # type: ignore
-from .adapters.plp_adapter import create_adapter
+from .adapters.plp_adapter import create_adapter, get_job_type
 from .adapters.result_manager import ResultManager
+from .adapters.jobs import JobQueue
+
+
+DEFERRED_RESULT_PATH = os.getenv("PLP_DEFERRED_RESULT_PATH", "/tmp/results")
+JOBS_PATH = os.getenv("PLP_JOBS_PATH", "/tmp/jobs")
+JOBS_DONE_PATH = os.getenv("PLP_JOBS_DONE_PATH", "/tmp/jobs_done")
 
 
 def parse_query(args: dict[str, str]):
@@ -26,13 +31,19 @@ def make_error(message):
 
 def create_app():
     wait_for_results_iterations = 1
+    os.makedirs(DEFERRED_RESULT_PATH, exist_ok=True)
     result_manager = ResultManager(
         url_format="/api/deferred/{id}",
-        result_root="/tmp"
+        result_root=DEFERRED_RESULT_PATH
     )
     adapter = create_adapter()
     logger = logging.getLogger(__name__)
     logger.info(f"Creating app: {adapter.name}")
+    job_queue = JobQueue.create_with_directories(
+        job_type=get_job_type(),
+        jobs_path=JOBS_PATH,
+        jobs_done_path=JOBS_DONE_PATH
+    )
 
     app = Flask(
         __name__,
@@ -47,7 +58,11 @@ def create_app():
     @app.route(f'/api/{adapter.name}')
     def service():
         data = parse_query(request.args)
-        result = adapter.run(data, result_manager)
+        result = adapter.run(
+            data=data,
+            result_manager=result_manager,
+            job_queue=job_queue
+        )
         result_context = result_manager.get_context(id=result.id)
         for _i in range(wait_for_results_iterations):
             if hasattr(result, "refresh_rate"):
