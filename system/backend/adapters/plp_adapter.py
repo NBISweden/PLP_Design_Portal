@@ -43,7 +43,7 @@ class PLPConfig(BaseModel):
     min_coverage: int = 0
     gc_min: int = 50
     gc_max: int = 65
-    iupac_mismatches: List[Tuple[int, str]] = [(5, "R"), (10, "G")]
+    iupac_mismatches: List[Tuple[int, str]] | None = None
     max_errors: Annotated[int, Field(ge=1, le=6)] = 4
     tm_min: int = 58
     tm_max: int = 62
@@ -61,7 +61,11 @@ class PLPConfig(BaseModel):
         cls, value: str | List[Tuple[int, str]]
     ) -> List[Tuple[int, str]]:
         if isinstance(value, str):
-            return parse_iupac_mismatches(value)
+            return (
+                parse_iupac_mismatches(value)
+                if len(value) > 0
+                else None
+            )
         else:
             return value
 
