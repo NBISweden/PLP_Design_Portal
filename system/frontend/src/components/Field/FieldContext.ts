@@ -98,6 +98,14 @@ export const FieldContext = React.createContext<FieldManager>({
     }
 });
 
+export function fieldListToDefaults(fieldDefs: FieldDef[]): Record<string, string | number> {
+    return fieldDefs.reduce<Record<string, string | number>>((acc, fieldDef) => {
+        if (fieldDef.default !== undefined) {
+            acc[fieldDef.id] = fieldDef.default
+        }
+        return acc;
+    }, {})
+}
 
 export function useField(id: string, type?: FieldDef["type"]): FieldDef {
     const ctx = React.useContext(FieldContext);

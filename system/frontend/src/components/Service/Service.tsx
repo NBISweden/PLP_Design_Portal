@@ -1,5 +1,5 @@
 import { FormEventHandler, useState, useContext } from "react";
-import { FieldContext, DisableFieldManager } from "../Fields";
+import { FieldContext, DisableFieldManager, fieldListToDefaults } from "../Fields";
 import { useClient} from "../../modules/Client";
 import { ErrorContext, useStaticErrorManager } from "../../modules/ErrorContext";
 import { useFormManager, FormContext } from "../../modules/FormContext";
@@ -64,7 +64,7 @@ export function Service() {
         });
     }
     const fieldManager = isWaiting ? new DisableFieldManager(fieldContext) : fieldContext;
-    const formManager = useFormManager();
+    const formManager = useFormManager(fieldListToDefaults(fieldManager.listFields()));
     return (
         <FormContext.Provider value={formManager}>
             <section className="section has-background-custom-grey-light">

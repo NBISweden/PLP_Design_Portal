@@ -213,7 +213,7 @@ class PLPAdapter:
                 "type": "number",
                 "default": 58,
                 "conditions": [
-                    "no_limit_tm=true"
+                    "no_limit_tm=false"
                 ]
             },
             {
@@ -221,7 +221,7 @@ class PLPAdapter:
                 "type": "number",
                 "default": 62,
                 "conditions": [
-                    "no_limit_tm=true"
+                    "no_limit_tm=false"
                 ]
             },
             {
@@ -229,7 +229,7 @@ class PLPAdapter:
                 "type": "number",
                 "default": 5,
                 "conditions": [
-                    "no_limit_tm=true"
+                    "no_limit_tm=false"
                 ]
             },
             {
@@ -258,7 +258,10 @@ class PLPAdapter:
                 "id": "off_target_output",
                 "type": "yesno",
                 "options": ["true", "false"],
-                "default": "false"
+                "default": "false",
+                "conditions": [
+                    "check_probe_specificity=true"
+                ]
             },
             {
                 "id": "check_probe_specificity",

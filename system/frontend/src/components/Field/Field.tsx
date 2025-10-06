@@ -120,7 +120,7 @@ export function Field(props: {
             formManager &&
             fieldDef.conditions &&
             fieldDef.conditions.length > 0 
-            ? fieldDef.conditions.some((c) => checkCondition(c, formManager.state))
+            ? !fieldDef.conditions.some((c) => checkCondition(c, formManager.state))
             : undefined
         );
         const valueHandlers = setValue !== null ? {

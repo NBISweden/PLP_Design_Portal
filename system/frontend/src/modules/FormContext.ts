@@ -9,8 +9,8 @@ export type FormManager = {
 
 export const FormContext = React.createContext<FormManager | null>(null);
 
-export function useFormManager() {
-    const [formState, setFormState] = React.useState<FormManager["state"]>({});
+export function useFormManager(defaultState: FormManager["state"] = {}) {
+    const [formState, setFormState] = React.useState<FormManager["state"]>(defaultState);
     const formManager = React.useMemo<FormManager>(() => ({
         setValue(id, value) {
             setFormState((state) => ({...state, [id]: value}))
