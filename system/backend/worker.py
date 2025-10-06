@@ -199,7 +199,7 @@ def run_probe_design(
                     )
                 )
 
-                targets_df = find_targets(
+                targets_df, off_target_info = find_targets(
                     selected_features=extracted_features_output_path,
                     sequences_output=extracted_sequences_fa_output_path,
                     output_file=result_output_path,
@@ -226,19 +226,22 @@ def run_probe_design(
                     )
                 )
 
-                headers = {
-                    header: header
-                    for header in targets_df.columns.values
-                }
-                entries = [entry for entry in targets_df.to_dict(orient="records")]
                 result_context.set_item(
-                    TableData(
-                        id="plp-result",
-                        label="PLP Result",
-                        headers=headers,
-                        entries=entries,
-                    )
+                    table_from_df(targets_df, "plp-result", "PLP Result")
                 )
+
+                if config.off_target_output:
+                    off_target_table = (
+                        TableData(
+                            id="plp-off-target-result",
+                            label="No PLP Off Target Available",
+                            headers={"value": "PLP Off Target Info"},
+                            entries=[{"value": "No off target info available"}],
+                        )
+                        if off_target_info is None or off_target_info.empty
+                        else table_from_df(off_target_info, "plp-off-target-result", "PLP Off Target Result")
+                    )
+                    result_context.set_item(off_target_table)
 
     except Exception as e:
         _update_status(
@@ -247,6 +250,20 @@ def run_probe_design(
                 description=f"Search failed: {e}: {current_time() - start_time}"
             )
         )
+        raise e
+
+def table_from_df(df, id:str, label:str) -> TableData:
+    headers = {
+        header: header
+        for header in df.columns.values
+    }
+    entries = [entry for entry in df.to_dict(orient="records")]
+    return TableData(
+        id=id,
+        label=label,
+        headers=headers,
+        entries=entries,
+    )
 
 
 def current_time():
