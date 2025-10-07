@@ -48,12 +48,12 @@ function AppCore() {
         {
             label: "Service",
             status: router.state.location.pathname === "/" ? "active" : undefined,
-            onClick: () => navigate("/")
+            href: "/",
         },
         {
             label: "Result History",
             status: router.state.location.pathname === "/results/" ? "active" : undefined,
-            onClick: () => navigate("/results/")
+            href: "/results/",
         },
         ...client.links.map(link => ({
             label: t(`links.${link.id}`),
