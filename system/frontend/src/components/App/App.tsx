@@ -6,17 +6,18 @@ import { useClient } from "../../modules/Client";
 import {
     createBrowserRouter,
     RouterProvider,
-    useNavigate,
     Outlet,
 } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import "./App.css";
 import {Footer} from "../Footer/Footer";
+import { useRouteError } from 'react-router-dom';
 
 const router = createBrowserRouter([
     {
         path: "/",
         element: <AppCore />,
+        errorElement: <ErrorHandler />,
         children: [
             {
                 path: "/",
@@ -40,7 +41,10 @@ export function App() {
 }
 
 function AppCore() {
-    const navigate = useNavigate();
+    return <AppBase><Outlet /></AppBase>
+}
+
+function AppBase({children}: {children: React.ReactNode}) {
     const {t} = useTranslation();
     const client = useClient();
     const title = t("service.title");
@@ -73,9 +77,29 @@ function AppCore() {
                 subtitle={t("service.subtitle")}
                 menuItems={menuItems}/>
             <main>
-                <Outlet />
+                {children}
             </main>
             <Footer/>
         </>
+    );
+}
+
+export function ErrorHandler() {
+    const error = useRouteError();
+    const {t} = useTranslation();
+
+    const errorObject = typeof error === 'object' && error !== null ? error : null
+    const statusText = errorObject && "statusText" in errorObject ? "" + errorObject.statusText : null;
+    const message = errorObject && "message" in errorObject ? "" + errorObject.message : null;
+
+    return (
+        <AppBase>
+            <section className="section has-background-custom-grey-light">
+                <div className="container">
+                    <h2 className="title is-size-4-mobile has-text-centered">{t("service.error_title")}</h2>
+                    <p>{statusText || message}</p>
+                </div>
+            </section>
+        </AppBase>
     );
 }
