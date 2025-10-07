@@ -230,7 +230,7 @@ def run_probe_design(
                     table_from_df(targets_df, "plp-result", "PLP Result")
                 )
 
-                if config.off_target_output:
+                if config.off_target_output and config.check_probe_specificity:
                     off_target_table = (
                         TableData(
                             id="plp-off-target-result",
