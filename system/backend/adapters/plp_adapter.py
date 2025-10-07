@@ -275,6 +275,11 @@ class PLPAdapter:
     def links(self):
         return [
             {
+                "id": "feedback",
+                "href": "https://forms.gle/pAUi4C5kKC5iAFVT8",
+                "icon": "fa-regular fa-circle-check",
+            },
+            {
                 "id": "github",
                 "href": "https://github.com/NBISweden/PLP_Design_Portal",
                 "icon": "fa-brands fa-github",
@@ -311,6 +316,7 @@ class PLPAdapter:
                         "title": "ISS Probe design",
                         "subtitle": "Design padlock probes for in-situ sequencing",
                         "waiting_for_results": "Waiting for ISS Probe results",
+                        "error_title": "An error occured",
                     },
                     "fields": {
                         "genome.label": "Genome",
@@ -333,7 +339,8 @@ class PLPAdapter:
                         "off_target_output.label": "Off Target Output",
                     },
                     "links": {
-                        "github": "View on GitHub"
+                        "github": "View on GitHub",
+                        "feedback": "Feedback form",
                     }
                 }
             }
