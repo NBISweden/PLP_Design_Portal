@@ -1,4 +1,5 @@
 import "./Header.css";
+import { Link } from 'react-router-dom';
 
 export type MenuItem = {
     status?: "active";
@@ -9,6 +10,8 @@ export type MenuItem = {
         href: string;
     } | {
         onClick: () => void;
+    } | {
+        link: string;
     }
 )
 
@@ -34,18 +37,22 @@ export function Header({title, subtitle, menuItems}: Props) {
                     </div>
                     <div className="column is-flex is-justify-content-flex-end is-one-third">
                         <nav>
-                            <ul className="is-flex">
+                            <ul className="is-flex is-flex-wrap-wrap is-justify-content-flex-end">
                                 {menuItems.map((item, index) => (
                                     <li key={index} className={`header-nav px-2 py-1 ml-2 ${item.status === "active" ? "active" : ""}`}>
-                                        {"href" in item ? (
+                                        {"href" in item && (
                                             <a href={item.href} className="is-size-6 ">
                                                 {item.icon && <i className={`${item.icon} mr-2`} aria-hidden="true"></i>}
                                                 {item.label}
                                             </a>
-                                        ) : (
+                                        )}
+                                        {"onClick" in item && (
                                             <a onClick={item.onClick} className="is-size-6 ">
                                                 {item.label}
                                             </a>
+                                        )}
+                                        {"link" in item && (
+                                            <Link to={item.link}>{item.label}</Link>
                                         )}
                                     </li>
                                 ))}

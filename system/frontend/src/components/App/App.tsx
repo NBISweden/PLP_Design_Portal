@@ -7,6 +7,7 @@ import {
     createBrowserRouter,
     RouterProvider,
     Outlet,
+    useLocation,
 } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import "./App.css";
@@ -48,16 +49,17 @@ function AppBase({children}: {children: React.ReactNode}) {
     const {t} = useTranslation();
     const client = useClient();
     const title = t("service.title");
+    const location = useLocation();
     const menuItems: MenuItem[] = [
         {
             label: "Service",
-            status: router.state.location.pathname === "/" ? "active" : undefined,
-            href: "/",
+            status: location.pathname === "/" ? "active" : undefined,
+            link: "/",
         },
         {
             label: "Result History",
-            status: router.state.location.pathname === "/results/" ? "active" : undefined,
-            href: "/results/",
+            status: location.pathname === "/results/" ? "active" : undefined,
+            link: "/results/",
         },
         ...client.links.map(link => ({
             label: t(`links.${link.id}`),
