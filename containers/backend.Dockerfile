@@ -10,12 +10,6 @@ ARG GID=1000
 
 ########################################
 FROM python:3.13-alpine3.22 AS service_base
-ARG BACKEND_SERVICE_DIR
-ARG BACKEND_PLP_DATA_PATH
-ENV PLP_GENOME_LIST_PATH="$BACKEND_PLP_DATA_PATH/genome_list.json"
-ENV PLP_JOBS_PATH="$BACKEND_PLP_DATA_PATH/jobs"
-ENV PLP_DEFERRED_RESULT_PATH="$BACKEND_PLP_DATA_PATH/results"
-ENV PLP_JOBS_DONE_PATH="$BACKEND_PLP_DATA_PATH/jobs_done"
 
 # Set environment variables to prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -47,6 +41,7 @@ COPY system/PLP_directRNA_design_V2/requirements.txt .
 RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
 
 # Copy service code resources
+ARG BACKEND_SERVICE_DIR
 RUN mkdir -p "$BACKEND_SERVICE_DIR"
 WORKDIR "$BACKEND_SERVICE_DIR"
 COPY --from=system PLP_directRNA_design_V2/codes codes
@@ -57,6 +52,13 @@ WORKDIR "$BACKEND_SERVICE_DIR/PLP_directRNA_design_package"
 RUN pip3 install --break-system-packages .
 
 RUN apk del build-deps
+
+ARG BACKEND_PLP_DATA_PATH
+ENV PLP_GENOME_LIST_PATH="$BACKEND_PLP_DATA_PATH/genome_list.json"
+ENV PLP_LINKS_PATH="$BACKEND_PLP_DATA_PATH/plp_links.json"
+ENV PLP_JOBS_PATH="$BACKEND_PLP_DATA_PATH/jobs"
+ENV PLP_DEFERRED_RESULT_PATH="$BACKEND_PLP_DATA_PATH/results"
+ENV PLP_JOBS_DONE_PATH="$BACKEND_PLP_DATA_PATH/jobs_done"
 
 
 ########################################

@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 GENOME_LIST_PATH = os.getenv("PLP_GENOME_LIST_PATH", "genome_list.json")
 JOBS_DONE_PATH = os.getenv("PLP_JOBS_DONE_PATH", "/tmp/jobs_done")
+LINKS_PATH = os.getenv("PLP_LINKS_PATH", "plp_links.json")
 
 
 class PLPConfig(BaseModel):
@@ -136,14 +137,23 @@ class GenomeRepository():
             return []
 
 
+class Link(BaseModel):
+    id: str
+    label: str
+    href: str
+    icon: str | None = None
+
+
 PLPJob = Job[Literal["plp"], PLPConfig]
 
 
 class PLPAdapter:
     name = "plp_search"
 
-    def __init__(self, genome_repository: GenomeRepository):
+    def __init__(self, genome_repository: GenomeRepository, links_path: str | None = None):
         self._genome_repository = genome_repository
+        self._links_path = links_path
+        self._link_list_ta = TypeAdapter(List[Link])
 
     @property
     def info(self):
@@ -273,12 +283,16 @@ class PLPAdapter:
 
     @property
     def links(self):
+        links = self._get_links()
         return [
-            {
-                "id": "feedback",
-                "href": "https://forms.gle/pAUi4C5kKC5iAFVT8",
-                "icon": "fa-regular fa-circle-check",
-            },
+            *[
+                {
+                    "id": link.id,
+                    "href": link.href,
+                    "icon": link.icon,
+                }
+                for link in links
+            ],
             {
                 "id": "github",
                 "href": "https://github.com/NBISweden/PLP_Design_Portal",
@@ -288,6 +302,7 @@ class PLPAdapter:
 
     @property
     def translation(self):
+        links = self._get_links()
         return {
             "en": {
                 "translation": {
@@ -340,7 +355,10 @@ class PLPAdapter:
                     },
                     "links": {
                         "github": "View on GitHub",
-                        "feedback": "Feedback form",
+                        **{
+                            link.id: link.label
+                            for link in links
+                        }
                     }
                 }
             }
@@ -455,6 +473,16 @@ class PLPAdapter:
 
         return result_context.get_result()
 
+    def _get_links(self) -> List[Link]:
+        if self._links_path is None:
+            return []
+        try:
+            with open(self._links_path, "r") as f:
+                return self._link_list_ta.validate_json(f.read())
+        except (FileNotFoundError, ValidationError) as e:
+            logger.warning(e)
+            return []
+
     def _get_job_id(self) -> str:
         return str(uuid.uuid4())
 
@@ -467,7 +495,7 @@ class PLPAdapter:
             return (config, None)
         except ValidationError as error:
             for e in error.errors():
-                logger.warn(e)
+                logger.warning(e)
             return (
                 None,
                 [(str(e["loc"][0]), f"{e['msg']}: {e['type']}") for e in error.errors()]
@@ -532,7 +560,8 @@ def timestamp():
 
 def create_adapter():
     return PLPAdapter(
-        genome_repository=GenomeRepository(GENOME_LIST_PATH)
+        genome_repository=GenomeRepository(GENOME_LIST_PATH),
+        links_path=LINKS_PATH,
     )
 
 
